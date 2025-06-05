@@ -15,8 +15,10 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   final _descriptionController = TextEditingController();
   final _weightController = TextEditingController();
   final _repsController = TextEditingController();
+  final _seriesController = TextEditingController();
   final _distanceController = TextEditingController();
   final _timeController = TextEditingController();
+  final _orderController = TextEditingController();
 
   @override
   void dispose() {
@@ -24,17 +26,28 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     _descriptionController.dispose();
     _weightController.dispose();
     _repsController.dispose();
+    _seriesController.dispose();
     _distanceController.dispose();
     _timeController.dispose();
+    _orderController.dispose();
     super.dispose();
   }
 
   void _saveExercise() async {
     if (_formKey.currentState!.validate()) {
       final nuevo = DatosEntrenamiento(
-        titulo: _nameController.text,
-        descripcion: _descriptionController.text,
+        titulo: _nameController.text.trim(),
+        descripcion: _descriptionController.text.trim(),
         fecha: DateTime.now(),
+        orden: int.tryParse(_orderController.text),
+        series: int.tryParse(_seriesController.text),
+        reps: int.tryParse(_repsController.text),
+        peso: double.tryParse(_weightController.text),
+        tiempo:
+            _timeController.text.trim().isNotEmpty
+                ? _timeController.text.trim()
+                : null,
+        distancia: double.tryParse(_distanceController.text),
       );
 
       await DBHelper.insert(nuevo);
@@ -101,17 +114,32 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               ),
               const SizedBox(height: 20),
               TextFormField(
-                controller: _weightController,
+                controller: _orderController,
                 decoration: _buildInputDecoration(
-                  'Peso (kg)',
-                  Icons.line_weight,
+                  'Orden',
+                  Icons.format_list_numbered,
                 ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _seriesController,
+                decoration: _buildInputDecoration('Series', Icons.looks_3),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _repsController,
                 decoration: _buildInputDecoration('Repeticiones', Icons.repeat),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _weightController,
+                decoration: _buildInputDecoration(
+                  'Peso (kg)',
+                  Icons.line_weight,
+                ),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),

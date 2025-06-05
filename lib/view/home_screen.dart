@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
     cargarEntrenamientosDelDia();
   }
 
-  void cargarEntrenamientosDelDia() async {
+  Future<void> cargarEntrenamientosDelDia() async {
     final hoy = DateTime.now();
     final datos = await DBHelper.getEntrenamientosDelDia(hoy);
     setState(() {
@@ -74,6 +74,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildEntrenamientoTile(DatosEntrenamiento e) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: const Icon(Icons.check_circle, color: Colors.deepPurple),
+        title: Text(e.titulo),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.descripcion),
+            const SizedBox(height: 4),
+            Text(
+              'Orden: ${e.orden ?? '-'} | Series: ${e.series ?? '-'} | Reps: ${e.reps ?? '-'}',
+            ),
+            Text(
+              'Peso: ${e.peso != null ? '${e.peso} kg' : '-'} | Tiempo: ${e.tiempo ?? '-'} | Distancia: ${e.distancia != null ? '${e.distancia} km' : '-'}',
+            ),
+          ],
+        ),
+        isThreeLine: true,
+        onTap: () async {
+          final resultado = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ExerciseDetailScreen(entrenamiento: e),
+            ),
+          );
+          if (resultado == true) {
+            await cargarEntrenamientosDelDia();
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final fechaHoy = DateFormat('dd/MM/yyyy').format(DateTime.now());
@@ -114,31 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemCount: entrenamientosDelDia.length,
                     itemBuilder: (context, index) {
                       final e = entrenamientosDelDia[index];
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.check_circle,
-                            color: Colors.deepPurple,
-                          ),
-                          title: Text(e.titulo),
-                          subtitle: Text(e.descripcion),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        ExerciseDetailScreen(entrenamiento: e),
-                              ),
-                            );
-                          },
-                        ),
-                      );
+                      return _buildEntrenamientoTile(e);
                     },
                   ),
                 ),
@@ -159,15 +172,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 onPressed: () async {
-                  // Espera a que se cierre AddExerciseScreen
                   final resultado = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const AddExerciseScreen(),
                     ),
                   );
-
-                  // Si se guardó un nuevo ejercicio, recarga la lista
                   if (resultado == true) {
                     cargarEntrenamientosDelDia();
                   }
