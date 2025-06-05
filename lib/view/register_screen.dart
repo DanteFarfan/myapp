@@ -1,5 +1,6 @@
 // register_screen.dart
 import 'package:flutter/material.dart';
+import '../database/db_helper.dart'; // ← Ajusta el path si es necesario
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -13,17 +14,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _usuarioController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
 
-  void _registrarUsuario() {
+  Future<void> _registrarUsuario() async {
     if (_formKey.currentState!.validate()) {
-      String usuario = _usuarioController.text;
-      String contrasena = _contrasenaController.text;
+      final usuario = _usuarioController.text.trim();
+      final contrasena = _contrasenaController.text.trim();
 
-      // Aquí deberías guardar el usuario en una base de datos
+      final existe = await DBHelper.existeUsuario(usuario);
+      if (existe) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('El usuario ya está registrado')),
+        );
+        return;
+      }
+
+      await DBHelper.registerUser(usuario, contrasena);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Usuario "$usuario" registrado con éxito')),
       );
 
-      Navigator.pop(context); // Volver al login
+      Navigator.pop(context); // Regresa al login
     }
   }
 
@@ -70,7 +79,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: const Icon(Icons.check),
                 label: const Text("Registrar"),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),

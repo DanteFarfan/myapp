@@ -5,6 +5,7 @@ import '../model/datos_entrenamiento.dart';
 class DBHelper {
   static Database? _db;
   static const String tabla = 'DatosEntrenamiento';
+  static const String tablaUsuarios = 'Usuarios';
 
   static Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
@@ -12,7 +13,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 2, // ← Aumenta la versión para aplicar cambios en la tabla
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -28,6 +29,14 @@ class DBHelper {
             distancia REAL
           )
         ''');
+
+        await db.execute('''
+          CREATE TABLE $tablaUsuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -38,6 +47,15 @@ class DBHelper {
           await db.execute('ALTER TABLE $tabla ADD COLUMN tiempo TEXT');
           await db.execute('ALTER TABLE $tabla ADD COLUMN distancia REAL');
         }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $tablaUsuarios (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              username TEXT UNIQUE,
+              password TEXT
+            )
+          ''');
+        }
       },
     );
   }
@@ -47,14 +65,62 @@ class DBHelper {
     return _db!;
   }
 
+  // ────────────────────────────────
+  // MÉTODOS DE USUARIO
+  // ────────────────────────────────
+
+  /// Registra un usuario. Devuelve `true` si fue exitoso, `false` si ya existe.
+  static Future<bool> registerUser(String username, String password) async {
+    final db = await getDB();
+
+    try {
+      await db.insert(tablaUsuarios, {
+        'username': username,
+        'password': password,
+      });
+      return true;
+    } catch (e) {
+      return false; // Usuario ya registrado o error
+    }
+  }
+
+  /// Verifica si un usuario y contraseña son correctos
+  static Future<bool> loginUser(String username, String password) async {
+    final db = await getDB();
+
+    final result = await db.query(
+      tablaUsuarios,
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, password],
+    );
+
+    return result.isNotEmpty;
+  }
+
+  /// Verifica si ya existe un usuario por nombre
+  static Future<bool> existeUsuario(String username) async {
+    final db = await getDB();
+
+    final result = await db.query(
+      tablaUsuarios,
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+
+    return result.isNotEmpty;
+  }
+
+  // ────────────────────────────────
+  // MÉTODOS DE ENTRENAMIENTO
+  // ────────────────────────────────
+
   static Future<int> insert(DatosEntrenamiento datos) async {
     final db = await getDB();
     return await db.insert(tabla, datos.toMap());
   }
 
   static Future<List<DatosEntrenamiento>> getEntrenamientosDelDia(
-    DateTime dia,
-  ) async {
+      DateTime dia) async {
     final db = await getDB();
     final hoyStr =
         '${dia.year}-${dia.month.toString().padLeft(2, '0')}-${dia.day.toString().padLeft(2, '0')}';
@@ -91,6 +157,6 @@ class DBHelper {
   static Future<void> close() async {
     final db = await getDB();
     await db.close();
-    _db = null; // Reinicia la instancia de la base de datos
+    _db = null;
   }
 }

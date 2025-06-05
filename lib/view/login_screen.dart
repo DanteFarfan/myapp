@@ -1,7 +1,8 @@
-// login_screen.dart (actualizado)
+// login_screen.dart (actualizado para SQLite)
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
+import '../database/db_helper.dart'; // Asegúrate de que el path sea correcto
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,12 +16,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usuarioController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
 
-  void _iniciarSesion() {
+  Future<void> _iniciarSesion() async {
     if (_formKey.currentState!.validate()) {
-      String usuario = _usuarioController.text;
-      String contrasena = _contrasenaController.text;
+      final usuario = _usuarioController.text.trim();
+      final contrasena = _contrasenaController.text.trim();
 
-      if (usuario == 'admin' && contrasena == '1234') {
+      final success = await DBHelper.loginUser(usuario, contrasena);
+
+      if (success) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -105,9 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: _continuarSinSesion,
                   child: const Text('Continuar sin iniciar sesión'),
                 ),
               ],
