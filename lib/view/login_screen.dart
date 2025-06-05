@@ -1,4 +1,3 @@
-// login_screen.dart (actualizado para SQLite)
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
@@ -24,9 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await DBHelper.loginUser(usuario, contrasena);
 
       if (success) {
-        Navigator.pushReplacement(
-          context,
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false, // elimina toda la pila anterior
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -37,9 +36,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _continuarSinSesion() {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  void _irARegistro() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
   }
 
@@ -89,8 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.login),
                   label: const Text("Entrar"),
                   style: ElevatedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -98,19 +103,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 10),
                 TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
+                  onPressed: _irARegistro,
                   child: const Text('¿No tienes cuenta? Regístrate aquí'),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // <- vuelve al HomeScreen original
-                  },
+                  onPressed: _continuarSinSesion,
                   child: const Text('Continuar sin iniciar sesión'),
                 ),
               ],
