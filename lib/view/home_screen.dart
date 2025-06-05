@@ -126,6 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person, color: Colors.black),
+            tooltip: 'Iniciar sesión',
+            onPressed: () {
+              Navigator.pushNamed(context, '/login');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.black),
             onPressed: () => _showOptions(context),
           ),
@@ -190,3 +197,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
