@@ -108,7 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton(
-                  onPressed: _continuarSinSesion,
+                  onPressed: () {
+                    Navigator.pop(context); // <- vuelve al HomeScreen original
+                  },
                   child: const Text('Continuar sin iniciar sesión'),
                 ),
               ],
