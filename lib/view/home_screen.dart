@@ -4,6 +4,7 @@ import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
+import 'package:myapp/view/usuario_screen.dart'; // Nueva importación
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,6 +112,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<bool> _verificarSesionActiva() async {
+    final usuario = await DBHelper.getUsuarioActivo();
+    return usuario != null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final fechaHoy = DateFormat('dd/MM/yyyy').format(DateTime.now());
@@ -128,8 +134,13 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.person, color: Colors.black),
             tooltip: 'Iniciar sesión',
-            onPressed: () {
-              Navigator.pushNamed(context, '/login');
+            onPressed: () async {
+              final haySesion = await _verificarSesionActiva();
+              if (haySesion) {
+                Navigator.pushNamed(context, '/usuario');
+              } else {
+                Navigator.pushNamed(context, '/login');
+              }
             },
           ),
           IconButton(
@@ -150,18 +161,18 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             entrenamientosDelDia.isEmpty
                 ? const Text(
-                  'No se registraron entrenamientos hoy.',
-                  style: TextStyle(color: Colors.grey),
-                )
+                    'No se registraron entrenamientos hoy.',
+                    style: TextStyle(color: Colors.grey),
+                  )
                 : Expanded(
-                  child: ListView.builder(
-                    itemCount: entrenamientosDelDia.length,
-                    itemBuilder: (context, index) {
-                      final e = entrenamientosDelDia[index];
-                      return _buildEntrenamientoTile(e);
-                    },
+                    child: ListView.builder(
+                      itemCount: entrenamientosDelDia.length,
+                      itemBuilder: (context, index) {
+                        final e = entrenamientosDelDia[index];
+                        return _buildEntrenamientoTile(e);
+                      },
+                    ),
                   ),
-                ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -197,5 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
 
 
