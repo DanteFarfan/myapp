@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DatosEntrenamiento> entrenamientosDelDia = [];
   DateTime _fechaSeleccionada = DateTime.now();
   Map<DateTime, List<DatosEntrenamiento>> _eventosPorFecha = {};
+  bool mostrarCalendario = true;
 
   @override
   void initState() {
@@ -161,38 +162,62 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TableCalendar(
-              locale: 'es_ES',
-              firstDay: DateTime(2000),
-              lastDay: DateTime(2100),
-              focusedDay: _fechaSeleccionada,
-              selectedDayPredicate: (day) => isSameDay(_fechaSeleccionada, day),
-              onDaySelected: (selectedDay, focusedDay) {
+            ElevatedButton.icon(
+              onPressed: () {
                 setState(() {
-                  _fechaSeleccionada = selectedDay;
+                  mostrarCalendario = !mostrarCalendario;
                 });
-                cargarEntrenamientosDelDia();
               },
-              eventLoader: (day) {
-                final key = DateTime(day.year, day.month, day.day);
-                return _eventosPorFecha[key] ?? [];
-              },
-              calendarStyle: const CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Colors.deepPurple,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent,
-                  shape: BoxShape.circle,
-                ),
-                markerDecoration: BoxDecoration(
-                  color: Colors.deepPurple,
-                  shape: BoxShape.circle,
+              icon: Icon(
+                mostrarCalendario ? Icons.expand_less : Icons.expand_more,
+                color: Colors.white,
+              ),
+              label: Text(
+                mostrarCalendario ? 'Ocultar Calendario' : 'Mostrar Calendario',
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
             ),
+            const SizedBox(height: 10),
+            if (mostrarCalendario)
+              TableCalendar(
+                locale: 'es_ES',
+                firstDay: DateTime(2000),
+                lastDay: DateTime(2100),
+                focusedDay: _fechaSeleccionada,
+                selectedDayPredicate:
+                    (day) => isSameDay(_fechaSeleccionada, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _fechaSeleccionada = selectedDay;
+                  });
+                  cargarEntrenamientosDelDia();
+                },
+                eventLoader: (day) {
+                  final key = DateTime(day.year, day.month, day.day);
+                  return _eventosPorFecha[key] ?? [];
+                },
+                calendarStyle: const CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: Colors.deepPurple,
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: Colors.deepPurpleAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  markerDecoration: BoxDecoration(
+                    color: Colors.deepPurple,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
+              ),
             const SizedBox(height: 10),
             Text(
               'Entrenamientos del ${fechaFormateada}',
