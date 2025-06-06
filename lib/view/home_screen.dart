@@ -232,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             const SizedBox(height: 10),
             Text(
-              'Entrenamientos del $fechaFormateada',
+              'Entrenamientos del ${fechaFormateada}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
