@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../model/datos_entrenamiento.dart';
+import '../model/usuario.dart'; // Asegúrate de tener esta importación
 
 class DBHelper {
   static Database? _db;
@@ -13,7 +14,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -34,7 +35,8 @@ class DBHelper {
           CREATE TABLE $tablaUsuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
-            password TEXT
+            password TEXT,
+            activo INTEGER DEFAULT 0
           )
         ''');
       },
@@ -52,9 +54,13 @@ class DBHelper {
             CREATE TABLE IF NOT EXISTS $tablaUsuarios (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               username TEXT UNIQUE,
-              password TEXT
+              password TEXT,
+              activo INTEGER DEFAULT 0
             )
           ''');
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE $tablaUsuarios ADD COLUMN activo INTEGER DEFAULT 0');
         }
       },
     );
@@ -69,7 +75,6 @@ class DBHelper {
   // MÉTODOS DE USUARIO
   // ────────────────────────────────
 
-  /// Registra un usuario. Devuelve `true` si fue exitoso, `false` si ya existe.
   static Future<bool> registerUser(String username, String password) async {
     final db = await getDB();
 
@@ -77,14 +82,14 @@ class DBHelper {
       await db.insert(tablaUsuarios, {
         'username': username,
         'password': password,
+        'activo': 0,
       });
       return true;
     } catch (e) {
-      return false; // Usuario ya registrado o error
+      return false;
     }
   }
 
-  /// Verifica si un usuario y contraseña son correctos
   static Future<bool> loginUser(String username, String password) async {
     final db = await getDB();
 
@@ -94,19 +99,51 @@ class DBHelper {
       whereArgs: [username, password],
     );
 
-    return result.isNotEmpty;
+    if (result.isNotEmpty) {
+      final userId = result.first['id'];
+
+      // Desactivar todos los usuarios
+      await db.update(tablaUsuarios, {'activo': 0});
+
+      // Activar el usuario actual
+      await db.update(
+        tablaUsuarios,
+        {'activo': 1},
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+
+      return true;
+    }
+
+    return false;
   }
 
-  /// Verifica si ya existe un usuario por nombre
+  static Future<void> logoutUser() async {
+    final db = await getDB();
+    await db.update(tablaUsuarios, {'activo': 0});
+  }
+
+  static Future<Usuario?> getUsuarioActivo() async {
+    final db = await getDB();
+    final result = await db.query(
+      tablaUsuarios,
+      where: 'activo = 1',
+      limit: 1,
+    );
+    if (result.isNotEmpty) {
+      return Usuario.fromMap(result.first);
+    }
+    return null;
+  }
+
   static Future<bool> existeUsuario(String username) async {
     final db = await getDB();
-
     final result = await db.query(
       tablaUsuarios,
       where: 'username = ?',
       whereArgs: [username],
     );
-
     return result.isNotEmpty;
   }
 

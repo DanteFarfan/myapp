@@ -4,6 +4,7 @@ import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
+import 'package:myapp/view/usuario_screen.dart'; // Nueva importación
 import 'package:table_calendar/table_calendar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -130,6 +131,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<bool> _verificarSesionActiva() async {
+    final usuario = await DBHelper.getUsuarioActivo();
+    return usuario != null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final fechaFormateada = DateFormat('dd/MM/yyyy').format(_fechaSeleccionada);
@@ -147,8 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.person, color: Colors.black),
             tooltip: 'Iniciar sesión',
-            onPressed: () {
-              Navigator.pushNamed(context, '/login');
+            onPressed: () async {
+              final haySesion = await _verificarSesionActiva();
+              if (haySesion) {
+                Navigator.pushNamed(context, '/usuario');
+              } else {
+                Navigator.pushNamed(context, '/login');
+              }
             },
           ),
           IconButton(
@@ -224,6 +235,20 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+            entrenamientosDelDia.isEmpty
+                ? const Text(
+                    'No se registraron entrenamientos hoy.',
+                    style: TextStyle(color: Colors.grey),
+                  )
+                : Expanded(
+                    child: ListView.builder(
+                      itemCount: entrenamientosDelDia.length,
+                      itemBuilder: (context, index) {
+                        final e = entrenamientosDelDia[index];
+                        return _buildEntrenamientoTile(e);
+                      },
+                    ),
+                  ),
             Expanded(
               child:
                   entrenamientosDelDia.isEmpty
@@ -280,3 +305,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
