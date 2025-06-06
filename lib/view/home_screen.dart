@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/model/usuario.dart';
+// import 'package:myapp/model/usuario.dart';
 import 'package:myapp/view/add_exercise.dart';
 import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
@@ -132,10 +132,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<bool> _verificarSesionActiva() async {
-    final usuario = await DBHelper.getUsuarioActivo();
-    return usuario != null;
-  }
+  // Future<bool> _verificarSesionActiva() async {
+  //   final usuario = await DBHelper.getUsuarioActivo();
+  //   return usuario != null;
+  // }
 
   @override
   Widget build(BuildContext context) {
