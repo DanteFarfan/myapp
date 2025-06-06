@@ -3,7 +3,9 @@ import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 
 class AddExerciseScreen extends StatefulWidget {
-  const AddExerciseScreen({super.key});
+  final DateTime? fechaSeleccionada;
+
+  const AddExerciseScreen({super.key, this.fechaSeleccionada});
 
   @override
   _AddExerciseScreenState createState() => _AddExerciseScreenState();
@@ -38,7 +40,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       final nuevo = DatosEntrenamiento(
         titulo: _nameController.text.trim(),
         descripcion: _descriptionController.text.trim(),
-        fecha: DateTime.now(),
+        fecha: widget.fechaSeleccionada ?? DateTime.now(),
         orden: int.tryParse(_orderController.text),
         series: int.tryParse(_seriesController.text),
         reps: int.tryParse(_repsController.text),
