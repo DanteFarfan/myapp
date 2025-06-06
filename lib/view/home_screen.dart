@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // import 'package:myapp/model/usuario.dart';
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 import 'package:myapp/view/add_exercise.dart';
