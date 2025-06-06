@@ -14,7 +14,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 5, // Incremento de versión para migración
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -36,7 +36,12 @@ class DBHelper {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT,
-            activo INTEGER DEFAULT 0
+            activo INTEGER DEFAULT 0,
+            correo TEXT DEFAULT '',
+            fecha_registro TEXT DEFAULT '',
+            fecha_nacimiento TEXT DEFAULT '',
+            peso REAL DEFAULT 0,
+            edad INTEGER DEFAULT 0
           )
         ''');
       },
@@ -49,18 +54,30 @@ class DBHelper {
           await db.execute('ALTER TABLE $tabla ADD COLUMN tiempo TEXT');
           await db.execute('ALTER TABLE $tabla ADD COLUMN distancia REAL');
         }
-        if (oldVersion < 3) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $tablaUsuarios (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              username TEXT UNIQUE,
-              password TEXT,
-              activo INTEGER DEFAULT 0
-            )
-          ''');
-        }
         if (oldVersion < 4) {
-          await db.execute('ALTER TABLE $tablaUsuarios ADD COLUMN activo INTEGER DEFAULT 0');
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN activo INTEGER DEFAULT 0',
+          );
+        }
+        if (oldVersion < 5) {
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN username TEXT DEFAULT \'\'',
+          );
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN correo TEXT DEFAULT \'\'',
+          );
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN fecha_registro TEXT DEFAULT \'\'',
+          );
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN fecha_nacimiento TEXT DEFAULT \'\'',
+          );
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN peso REAL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE $tablaUsuarios ADD COLUMN edad INTEGER DEFAULT 0',
+          );
         }
       },
     );
@@ -71,18 +88,20 @@ class DBHelper {
     return _db!;
   }
 
-  // ────────────────────────────────
-  // MÉTODOS DE USUARIO
-  // ────────────────────────────────
+  // ─────────── MÉTODOS DE USUARIO ───────────
 
   static Future<bool> registerUser(String username, String password) async {
     final db = await getDB();
-
     try {
       await db.insert(tablaUsuarios, {
         'username': username,
         'password': password,
         'activo': 0,
+        'correo': '',
+        'fecha_registro': '',
+        'fecha_nacimiento': '',
+        'peso': 0,
+        'edad': 0,
       });
       return true;
     } catch (e) {
@@ -102,10 +121,7 @@ class DBHelper {
     if (result.isNotEmpty) {
       final userId = result.first['id'];
 
-      // Desactivar todos los usuarios
       await db.update(tablaUsuarios, {'activo': 0});
-
-      // Activar el usuario actual
       await db.update(
         tablaUsuarios,
         {'activo': 1},
@@ -126,11 +142,7 @@ class DBHelper {
 
   static Future<Usuario?> getUsuarioActivo() async {
     final db = await getDB();
-    final result = await db.query(
-      tablaUsuarios,
-      where: 'activo = 1',
-      limit: 1,
-    );
+    final result = await db.query(tablaUsuarios, where: 'activo = 1', limit: 1);
     if (result.isNotEmpty) {
       return Usuario.fromMap(result.first);
     }
@@ -147,9 +159,32 @@ class DBHelper {
     return result.isNotEmpty;
   }
 
-  // ────────────────────────────────
-  // MÉTODOS DE ENTRENAMIENTO
-  // ────────────────────────────────
+  static Future<int> actualizarUsuario(Usuario usuario) async {
+    final db = await getDB();
+    return await db.update(
+      tablaUsuarios,
+      usuario.toMap(),
+      where: 'id = ?',
+      whereArgs: [usuario.id],
+    );
+  }
+
+  static Future<void> eliminarUsuario(int id) async {
+    final db = await getDB();
+    await db.delete(tablaUsuarios, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<bool> registrarUsuarioExtendido(Usuario usuario) async {
+    final db = await getDB();
+    try {
+      await db.insert(tablaUsuarios, usuario.toMap());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ─────────── MÉTODOS DE ENTRENAMIENTO ───────────
 
   static Future<int> insert(DatosEntrenamiento datos) async {
     final db = await getDB();
@@ -157,7 +192,8 @@ class DBHelper {
   }
 
   static Future<List<DatosEntrenamiento>> getEntrenamientosDelDia(
-      DateTime dia) async {
+    DateTime dia,
+  ) async {
     final db = await getDB();
     final hoyStr =
         '${dia.year}-${dia.month.toString().padLeft(2, '0')}-${dia.day.toString().padLeft(2, '0')}';

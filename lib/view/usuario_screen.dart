@@ -12,41 +12,94 @@ class UsuarioScreen extends StatelessWidget {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  void _editarUsuario(BuildContext context) async {
-    final controller = TextEditingController(text: usuario.username);
+  Future<void> _editarUsuario(BuildContext context) async {
+    final nombreController = TextEditingController(text: usuario.nombre);
+    final passwordController = TextEditingController(text: usuario.password);
+    final correoController = TextEditingController(text: usuario.correo);
+    final fechaNacController = TextEditingController(
+      text: usuario.fechaNacimiento,
+    );
+    final pesoController = TextEditingController(text: usuario.peso.toString());
+    final edadController = TextEditingController(text: usuario.edad.toString());
 
-    final nuevoUsername = await showDialog<String>(
+    final result = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Editar nombre de usuario'),
-            content: TextField(
-              controller: controller,
-              decoration: const InputDecoration(labelText: 'Nuevo nombre'),
+            title: const Text('Editar perfil'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nombreController,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  TextField(
+                    controller: passwordController,
+                    decoration: const InputDecoration(labelText: 'Contraseña'),
+                    obscureText: true,
+                  ),
+                  TextField(
+                    controller: correoController,
+                    decoration: const InputDecoration(labelText: 'Correo'),
+                  ),
+                  TextField(
+                    controller: fechaNacController,
+                    decoration: const InputDecoration(
+                      labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
+                    ),
+                  ),
+                  TextField(
+                    controller: pesoController,
+                    decoration: const InputDecoration(labelText: 'Peso (kg)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: edadController,
+                    decoration: const InputDecoration(labelText: 'Edad'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text('Cancelar'),
-                onPressed: () => Navigator.pop(context),
               ),
               ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
                 child: const Text('Guardar'),
-                onPressed: () => Navigator.pop(context, controller.text),
               ),
             ],
           ),
     );
 
-    if (nuevoUsername != null &&
-        nuevoUsername != usuario.username &&
-        nuevoUsername.trim().isNotEmpty) {
+    if (result == true) {
+      final nuevoNombre = nombreController.text.trim();
+      final nuevaPassword = passwordController.text.trim();
+      final nuevoCorreo = correoController.text.trim();
+      final nuevaFechaNac = fechaNacController.text.trim();
+      final nuevoPeso =
+          double.tryParse(pesoController.text.trim()) ?? usuario.peso;
+      final nuevaEdad =
+          int.tryParse(edadController.text.trim()) ?? usuario.edad;
+
       final db = await DBHelper.getDB();
       await db.update(
         DBHelper.tablaUsuarios,
-        {'username': nuevoUsername},
+        {
+          'nombre': nuevoNombre,
+          'password': nuevaPassword,
+          'correo': nuevoCorreo,
+          'fecha_nacimiento': nuevaFechaNac,
+          'peso': nuevoPeso,
+          'edad': nuevaEdad,
+        },
         where: 'id = ?',
         whereArgs: [usuario.id],
       );
+
       await DBHelper.logoutUser();
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
@@ -132,28 +185,52 @@ class UsuarioScreen extends StatelessWidget {
         ],
       ),
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(30.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.account_circle,
-                size: 120,
-                color: Colors.deepPurple,
+              const Center(
+                child: Icon(
+                  Icons.account_circle,
+                  size: 120,
+                  color: Colors.deepPurple,
+                ),
               ),
               const SizedBox(height: 30),
               Text(
-                usuario.username,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
+                'ID: ${usuario.id}',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 10),
               Text(
-                'ID: ${usuario.id}',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                'Nombre: ${usuario.nombre}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Correo: ${usuario.correo}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Fecha de Registro: ${usuario.fechaRegistro}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Fecha de Nacimiento: ${usuario.fechaNacimiento}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Peso: ${usuario.peso} kg',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Edad: ${usuario.edad}',
+                style: const TextStyle(fontSize: 20),
               ),
             ],
           ),
