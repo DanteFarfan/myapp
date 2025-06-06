@@ -185,6 +185,7 @@ class UsuarioScreen extends StatelessWidget {
         ],
       ),
       body: Center(
+<<<<<<< Updated upstream
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(30.0),
           child: Column(
@@ -234,6 +235,18 @@ class UsuarioScreen extends StatelessWidget {
               ),
             ],
           ),
+=======
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person, size: 100, color: Colors.deepPurple),
+            const SizedBox(height: 20),
+            Text(
+              'Nombre: ${usuario.username}', // ✅ cambio aquí
+              style: const TextStyle(fontSize: 20),
+            ),
+          ],
+>>>>>>> Stashed changes
         ),
       ),
     );

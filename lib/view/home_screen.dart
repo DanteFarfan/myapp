@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+<<<<<<< Updated upstream
 // import 'package:myapp/model/usuario.dart';
+=======
+>>>>>>> Stashed changes
 import 'package:myapp/view/add_exercise.dart';
 import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
-// import 'package:myapp/view/usuario_screen.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:myapp/view/usuario_screen.dart';
+import 'package:myapp/view/plan_nutricion_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DatosEntrenamiento> entrenamientosDelDia = [];
   DateTime _fechaSeleccionada = DateTime.now();
   Map<DateTime, List<DatosEntrenamiento>> _eventosPorFecha = {};
-  bool mostrarCalendario = true;
 
   @override
   void initState() {
@@ -72,12 +75,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {},
               ),
               ListTile(
-                leading: const Icon(
-                  Icons.restaurant_menu,
-                  color: Colors.deepPurple,
-                ),
+                leading: const Icon(Icons.restaurant_menu, color: Colors.deepPurple),
                 title: const Text('Plan de nutrición'),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context); // Cierra el modal
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PlanDeNutricionScreen()),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(
@@ -155,9 +161,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.person, color: Colors.black),
             tooltip: 'Iniciar sesión',
             onPressed: () async {
-              final usuario = await DBHelper.getUsuarioActivo();
-              if (usuario != null) {
-                Navigator.pushNamed(context, '/usuario', arguments: usuario);
+              final haySesion = await _verificarSesionActiva();
+              if (haySesion) {
+                Navigator.pushNamed(context, '/usuario');
               } else {
                 Navigator.pushNamed(context, '/login');
               }
@@ -174,62 +180,38 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton.icon(
-              onPressed: () {
+            TableCalendar(
+              locale: 'es_ES',
+              firstDay: DateTime(2000),
+              lastDay: DateTime(2100),
+              focusedDay: _fechaSeleccionada,
+              selectedDayPredicate: (day) => isSameDay(_fechaSeleccionada, day),
+              onDaySelected: (selectedDay, focusedDay) {
                 setState(() {
-                  mostrarCalendario = !mostrarCalendario;
+                  _fechaSeleccionada = selectedDay;
                 });
+                cargarEntrenamientosDelDia();
               },
-              icon: Icon(
-                mostrarCalendario ? Icons.expand_less : Icons.expand_more,
-                color: Colors.white,
-              ),
-              label: Text(
-                mostrarCalendario ? 'Ocultar Calendario' : 'Mostrar Calendario',
-                style: const TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple.shade400,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              eventLoader: (day) {
+                final key = DateTime(day.year, day.month, day.day);
+                return _eventosPorFecha[key] ?? [];
+              },
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.deepPurpleAccent,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
                 ),
               ),
+              availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
             ),
-            const SizedBox(height: 10),
-            if (mostrarCalendario)
-              TableCalendar(
-                locale: 'es_ES',
-                firstDay: DateTime(2000),
-                lastDay: DateTime(2100),
-                focusedDay: _fechaSeleccionada,
-                selectedDayPredicate:
-                    (day) => isSameDay(_fechaSeleccionada, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _fechaSeleccionada = selectedDay;
-                  });
-                  cargarEntrenamientosDelDia();
-                },
-                eventLoader: (day) {
-                  final key = DateTime(day.year, day.month, day.day);
-                  return _eventosPorFecha[key] ?? [];
-                },
-                calendarStyle: const CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                    color: Colors.deepPurple,
-                    shape: BoxShape.circle,
-                  ),
-                  selectedDecoration: BoxDecoration(
-                    color: Colors.deepPurpleAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  markerDecoration: BoxDecoration(
-                    color: Colors.deepPurple,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
-              ),
             const SizedBox(height: 10),
             Text(
               'Entrenamientos del $fechaFormateada',
@@ -238,18 +220,35 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             entrenamientosDelDia.isEmpty
                 ? const Text(
-                  'No se registraron entrenamientos hoy.',
-                  style: TextStyle(color: Colors.grey),
-                )
+                    'No se registraron entrenamientos hoy.',
+                    style: TextStyle(color: Colors.grey),
+                  )
                 : Expanded(
-                  child: ListView.builder(
-                    itemCount: entrenamientosDelDia.length,
-                    itemBuilder: (context, index) {
-                      final e = entrenamientosDelDia[index];
-                      return _buildEntrenamientoTile(e);
-                    },
+                    child: ListView.builder(
+                      itemCount: entrenamientosDelDia.length,
+                      itemBuilder: (context, index) {
+                        final e = entrenamientosDelDia[index];
+                        return _buildEntrenamientoTile(e);
+                      },
+                    ),
                   ),
-                ),
+            Expanded(
+              child:
+                  entrenamientosDelDia.isEmpty
+                      ? const Center(
+                        child: Text(
+                          'No se registraron entrenamientos en esta fecha.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                      : ListView.builder(
+                        itemCount: entrenamientosDelDia.length,
+                        itemBuilder: (context, index) {
+                          final e = entrenamientosDelDia[index];
+                          return _buildEntrenamientoTile(e);
+                        },
+                      ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -289,3 +288,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
