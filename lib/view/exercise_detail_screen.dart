@@ -81,7 +81,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     );
 
     await DBHelper.update(actualizado);
-    Navigator.pop(context, true); // Recargar lista en pantalla anterior
+    Navigator.pop(context, true); // Notifica recarga a la pantalla anterior
   }
 
   void _confirmarEliminacion() async {
@@ -109,7 +109,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
     if (confirmacion == true) {
       await DBHelper.delete(widget.entrenamiento.id!);
-      Navigator.pop(context, true);
+      Navigator.pop(context, true); // Notifica recarga a la pantalla anterior
     }
   }
 

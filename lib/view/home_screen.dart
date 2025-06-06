@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 import 'package:myapp/view/usuario_screen.dart'; // Nueva importación
+import 'package:table_calendar/table_calendar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,16 +16,32 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<DatosEntrenamiento> entrenamientosDelDia = [];
+  DateTime _fechaSeleccionada = DateTime.now();
+  Map<DateTime, List<DatosEntrenamiento>> _eventosPorFecha = {};
 
   @override
   void initState() {
     super.initState();
     cargarEntrenamientosDelDia();
+    cargarEventosCalendario();
+  }
+
+  Future<void> cargarEventosCalendario() async {
+    final todos = await DBHelper.getAll();
+    final Map<DateTime, List<DatosEntrenamiento>> agrupados = {};
+
+    for (final e in todos) {
+      final fecha = DateTime(e.fecha.year, e.fecha.month, e.fecha.day);
+      agrupados.putIfAbsent(fecha, () => []).add(e);
+    }
+
+    setState(() {
+      _eventosPorFecha = agrupados;
+    });
   }
 
   Future<void> cargarEntrenamientosDelDia() async {
-    final hoy = DateTime.now();
-    final datos = await DBHelper.getEntrenamientosDelDia(hoy);
+    final datos = await DBHelper.getEntrenamientosDelDia(_fechaSeleccionada);
     setState(() {
       entrenamientosDelDia = datos;
     });
@@ -106,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           if (resultado == true) {
             await cargarEntrenamientosDelDia();
+            await cargarEventosCalendario();
           }
         },
       ),
@@ -119,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fechaHoy = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    final fechaFormateada = DateFormat('dd/MM/yyyy').format(_fechaSeleccionada);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
@@ -154,8 +172,41 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TableCalendar(
+              locale: 'es_ES',
+              firstDay: DateTime(2000),
+              lastDay: DateTime(2100),
+              focusedDay: _fechaSeleccionada,
+              selectedDayPredicate: (day) => isSameDay(_fechaSeleccionada, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _fechaSeleccionada = selectedDay;
+                });
+                cargarEntrenamientosDelDia();
+              },
+              eventLoader: (day) {
+                final key = DateTime(day.year, day.month, day.day);
+                return _eventosPorFecha[key] ?? [];
+              },
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.deepPurpleAccent,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
+            ),
+            const SizedBox(height: 10),
             Text(
-              'Entrenamientos de hoy ($fechaHoy)',
+              'Entrenamientos del ${fechaFormateada}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -173,6 +224,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
+            Expanded(
+              child:
+                  entrenamientosDelDia.isEmpty
+                      ? const Center(
+                        child: Text(
+                          'No se registraron entrenamientos en esta fecha.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                      : ListView.builder(
+                        itemCount: entrenamientosDelDia.length,
+                        itemBuilder: (context, index) {
+                          final e = entrenamientosDelDia[index];
+                          return _buildEntrenamientoTile(e);
+                        },
+                      ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -193,11 +261,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   final resultado = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AddExerciseScreen(),
+                      builder:
+                          (context) => AddExerciseScreen(
+                            fechaSeleccionada: _fechaSeleccionada,
+                          ),
                     ),
                   );
                   if (resultado == true) {
                     cargarEntrenamientosDelDia();
+                    cargarEventosCalendario();
                   }
                 },
               ),
