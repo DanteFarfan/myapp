@@ -26,21 +26,32 @@ class MyApp extends StatelessWidget {
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/usuario') {
-          final usuario = settings.arguments as Usuario;
-          return MaterialPageRoute(
-            builder: (context) => UsuarioScreen(usuario: usuario),
-          );
+          final args = settings.arguments;
+          if (args is Usuario) {
+            return MaterialPageRoute(
+              builder: (context) => UsuarioScreen(usuario: args),
+            );
+          } else {
+            // Argumento no válido o no enviado
+            return MaterialPageRoute(
+              builder:
+                  (context) => const Scaffold(
+                    body: Center(
+                      child: Text('Error: No se proporcionó un usuario válido'),
+                    ),
+                  ),
+            );
+          }
         }
 
         // Ruta no reconocida
         return MaterialPageRoute(
-          builder: (context) => const Scaffold(
-            body: Center(child: Text('Ruta no encontrada')),
-          ),
+          builder:
+              (context) => const Scaffold(
+                body: Center(child: Text('Ruta no encontrada')),
+              ),
         );
       },
     );
   }
 }
-
-

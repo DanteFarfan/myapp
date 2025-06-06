@@ -20,7 +20,7 @@ class UsuarioScreen extends StatelessWidget {
             const Icon(Icons.person, size: 100, color: Colors.deepPurple),
             const SizedBox(height: 20),
             Text(
-              'Nombre: ${usuario.username}', // ✅ cambio aquí
+              'Nombre: ${usuario.username}',
               style: const TextStyle(fontSize: 20),
             ),
           ],

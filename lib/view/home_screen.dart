@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/model/usuario.dart';
 import 'package:myapp/view/add_exercise.dart';
 import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
@@ -154,9 +155,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.person, color: Colors.black),
             tooltip: 'Iniciar sesión',
             onPressed: () async {
-              final haySesion = await _verificarSesionActiva();
-              if (haySesion) {
-                Navigator.pushNamed(context, '/usuario');
+              final usuario = await DBHelper.getUsuarioActivo();
+              if (usuario != null) {
+                Navigator.pushNamed(context, '/usuario', arguments: usuario);
               } else {
                 Navigator.pushNamed(context, '/login');
               }
