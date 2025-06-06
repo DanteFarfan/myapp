@@ -133,8 +133,12 @@ class UsuarioScreen extends StatelessWidget {
       ),
       body: Center(
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< Updated upstream
         child: SingleChildScrollView(
+=======
+        child: Padding(
+>>>>>>> parent of 0e92e39 (eliminar y editar cuenta)
 =======
         child: Padding(
 >>>>>>> parent of 0e92e39 (eliminar y editar cuenta)
