@@ -2,74 +2,134 @@ import 'package:flutter/material.dart';
 import 'package:myapp/model/usuario.dart';
 import 'package:myapp/database/db_helper.dart';
 
-class UsuarioScreen extends StatelessWidget {
+class UsuarioScreen extends StatefulWidget {
   final Usuario usuario;
 
   const UsuarioScreen({super.key, required this.usuario});
 
-  void _cerrarSesion(BuildContext context) async {
-    await DBHelper.logoutUser();
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  @override
+  State<UsuarioScreen> createState() => _UsuarioScreenState();
+}
+
+class _UsuarioScreenState extends State<UsuarioScreen> {
+  late Usuario _usuario;
+
+  @override
+  void initState() {
+    super.initState();
+    _usuario = widget.usuario;
   }
 
-  void _editarUsuario(BuildContext context) async {
-    final controller = TextEditingController(text: usuario.username);
+  void _cerrarSesion() async {
+    await DBHelper.logoutUser();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
 
-    final nuevoUsername = await showDialog<String>(
+  void _editarUsuario() async {
+    final nombreController = TextEditingController(text: _usuario.username);
+    final correoController = TextEditingController(
+      text: _usuario.correoElectronico,
+    );
+    final nacimientoController = TextEditingController(
+      text: _usuario.fechaNacimiento,
+    );
+    final pesoController = TextEditingController(
+      text: _usuario.peso.toString(),
+    );
+    final edadController = TextEditingController(
+      text: _usuario.edad.toString(),
+    );
+
+    final confirm = await showDialog<bool>(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Editar nombre de usuario'),
-            content: TextField(
-              controller: controller,
-              decoration: const InputDecoration(labelText: 'Nuevo nombre'),
+          (_) => AlertDialog(
+            title: const Text('Editar datos de usuario'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _campoTexto(nombreController, 'Nombre de usuario'),
+                  _campoTexto(correoController, 'Correo electrónico'),
+                  _campoTexto(
+                    nacimientoController,
+                    'Fecha de nacimiento (AAAA-MM-DD)',
+                  ),
+                  _campoTexto(pesoController, 'Peso (kg)', isNumber: true),
+                  _campoTexto(edadController, 'Edad', isNumber: true),
+                ],
+              ),
             ),
             actions: [
               TextButton(
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text('Cancelar'),
-                onPressed: () => Navigator.pop(context),
               ),
               ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
                 child: const Text('Guardar'),
-                onPressed: () => Navigator.pop(context, controller.text),
               ),
             ],
           ),
     );
 
-    if (nuevoUsername != null &&
-        nuevoUsername != usuario.username &&
-        nuevoUsername.trim().isNotEmpty) {
+    if (confirm == true) {
       final db = await DBHelper.getDB();
+
+      final nuevosDatos = <String, Object>{
+        'username': nombreController.text.trim(),
+        'correo_electronico': correoController.text.trim(),
+        'fecha_nacimiento': nacimientoController.text.trim(),
+        'peso': double.tryParse(pesoController.text.trim()) ?? 0.0,
+        'edad': int.tryParse(edadController.text.trim()) ?? 0,
+      };
+
       await db.update(
         DBHelper.tablaUsuarios,
-        {'username': nuevoUsername},
+        nuevosDatos,
         where: 'id = ?',
-        whereArgs: [usuario.id],
+        whereArgs: [_usuario.id],
       );
-      await DBHelper.logoutUser();
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+
+      setState(() {
+        _usuario = Usuario(
+          id: _usuario.id,
+          username: nuevosDatos['username'] as String,
+          correoElectronico: nuevosDatos['correo_electronico'] as String,
+          fechaNacimiento: nuevosDatos['fecha_nacimiento'] as String,
+          peso: nuevosDatos['peso'] as double,
+          edad: nuevosDatos['edad'] as int,
+          fechaRegistro: _usuario.fechaRegistro,
+          password: _usuario.password,
+          activo: _usuario.activo,
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Datos actualizados exitosamente')),
+      );
     }
   }
 
-  void _eliminarCuenta(BuildContext context) async {
+  void _eliminarCuenta() async {
     final confirmacion = await showDialog<bool>(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (_) => AlertDialog(
             title: const Text('Eliminar cuenta'),
             content: const Text(
               '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
             ),
             actions: [
               TextButton(
-                child: const Text('Cancelar'),
                 onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
               ),
               ElevatedButton(
-                child: const Text('Eliminar'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Eliminar'),
               ),
             ],
           ),
@@ -80,22 +140,54 @@ class UsuarioScreen extends StatelessWidget {
       await db.delete(
         DBHelper.tablaUsuarios,
         where: 'id = ?',
-        whereArgs: [usuario.id],
+        whereArgs: [_usuario.id],
       );
       await DBHelper.logoutUser();
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
     }
   }
 
-  void _handleMenuSelection(BuildContext context, String choice) {
-    switch (choice) {
+  void _handleMenu(String opcion) {
+    switch (opcion) {
       case 'editar':
-        _editarUsuario(context);
+        _editarUsuario();
         break;
       case 'eliminar':
-        _eliminarCuenta(context);
+        _eliminarCuenta();
         break;
     }
+  }
+
+  Widget _campoTexto(
+    TextEditingController controller,
+    String label, {
+    bool isNumber = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _info(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(value ?? '-', style: const TextStyle(color: Colors.black87)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -109,21 +201,14 @@ class UsuarioScreen extends StatelessWidget {
         backgroundColor: Colors.deepPurple,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
-            onPressed: () => _cerrarSesion(context),
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _cerrarSesion),
           PopupMenuButton<String>(
-            onSelected: (value) => _handleMenuSelection(context, value),
+            onSelected: _handleMenu,
             icon: const Icon(Icons.more_vert, color: Colors.white),
             itemBuilder:
-                (BuildContext context) => [
-                  const PopupMenuItem(
-                    value: 'editar',
-                    child: Text('Editar usuario'),
-                  ),
-                  const PopupMenuItem(
+                (_) => const [
+                  PopupMenuItem(value: 'editar', child: Text('Editar usuario')),
+                  PopupMenuItem(
                     value: 'eliminar',
                     child: Text('Eliminar cuenta'),
                   ),
@@ -133,28 +218,25 @@ class UsuarioScreen extends StatelessWidget {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(30.0),
+          padding: const EdgeInsets.all(30),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.account_circle,
-                size: 120,
-                color: Colors.deepPurple,
-              ),
-              const SizedBox(height: 30),
-              Text(
-                usuario.username,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
+              const Center(
+                child: Icon(
+                  Icons.account_circle,
+                  size: 100,
+                  color: Colors.deepPurple,
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'ID: ${usuario.id}',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+              const SizedBox(height: 20),
+              _info('ID', _usuario.id.toString()),
+              _info('Usuario', _usuario.username),
+              _info('Correo', _usuario.correoElectronico),
+              _info('Nacimiento', _usuario.fechaNacimiento),
+              _info('Peso', _usuario.peso.toString()),
+              _info('Edad', _usuario.edad.toString()),
+              _info('Registrado el', _usuario.fechaRegistro),
             ],
           ),
         ),

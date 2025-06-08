@@ -37,7 +37,22 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   void _saveExercise() async {
     if (_formKey.currentState!.validate()) {
+      final usuario = await DBHelper.getUsuarioActivo();
+      if (usuario == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: No hay usuario activo')),
+        );
+        return;
+      }
+
+      // final fecha = DateTime(
+      //   (widget.fechaSeleccionada ?? DateTime.now()).year,
+      //   (widget.fechaSeleccionada ?? DateTime.now()).month,
+      //   (widget.fechaSeleccionada ?? DateTime.now()).day,
+      // );
+
       final nuevo = DatosEntrenamiento(
+        idUsuario: usuario.id,
         titulo: _nameController.text.trim(),
         descripcion: _descriptionController.text.trim(),
         fecha: widget.fechaSeleccionada ?? DateTime.now(),

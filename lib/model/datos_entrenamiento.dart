@@ -9,6 +9,7 @@ class DatosEntrenamiento {
   final double? peso;
   final String? tiempo;
   final double? distancia;
+  final int? idUsuario;
 
   DatosEntrenamiento({
     this.id,
@@ -21,6 +22,7 @@ class DatosEntrenamiento {
     this.peso,
     this.tiempo,
     this.distancia,
+    this.idUsuario,
   });
 
   Map<String, dynamic> toMap() {
@@ -28,28 +30,24 @@ class DatosEntrenamiento {
       'id': id,
       'titulo': titulo,
       'descripcion': descripcion,
-      'fecha':
-          '${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}',
+      'fecha': fecha.toIso8601String(), // o .toString() si prefieres
       'orden': orden,
       'series': series,
       'reps': reps,
       'peso': peso,
       'tiempo': tiempo,
       'distancia': distancia,
+      'id_usuario': idUsuario,
     };
   }
 
   factory DatosEntrenamiento.fromMap(Map<String, dynamic> map) {
-    final fechaParts = map['fecha'].split('-');
+    // final fechaParts = map['fecha'].split('-');
     return DatosEntrenamiento(
       id: map['id'],
       titulo: map['titulo'],
       descripcion: map['descripcion'],
-      fecha: DateTime(
-        int.parse(fechaParts[0]),
-        int.parse(fechaParts[1]),
-        int.parse(fechaParts[2]),
-      ),
+      fecha: DateTime.parse(map['fecha']),
       orden: map['orden'],
       series: map['series'],
       reps: map['reps'],
@@ -59,6 +57,7 @@ class DatosEntrenamiento {
           map['distancia'] != null
               ? (map['distancia'] as num).toDouble()
               : null,
+      idUsuario: map['id_usuario'],
     );
   }
 }

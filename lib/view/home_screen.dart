@@ -7,6 +7,7 @@ import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 // import 'package:myapp/view/usuario_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:myapp/view/seguimiento_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DatosEntrenamiento> entrenamientosDelDia = [];
   DateTime _fechaSeleccionada = DateTime.now();
   Map<DateTime, List<DatosEntrenamiento>> _eventosPorFecha = {};
-  bool mostrarCalendario = true;
+  bool mostrarCalendario = false;
 
   @override
   void initState() {
@@ -29,10 +30,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> cargarEventosCalendario() async {
-    final todos = await DBHelper.getAll();
+    final entrenamientos = await DBHelper.getEntrenamientosUsuarioActivo();
     final Map<DateTime, List<DatosEntrenamiento>> agrupados = {};
 
-    for (final e in todos) {
+    for (final e in entrenamientos) {
       final fecha = DateTime(e.fecha.year, e.fecha.month, e.fecha.day);
       agrupados.putIfAbsent(fecha, () => []).add(e);
     }
@@ -43,7 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> cargarEntrenamientosDelDia() async {
-    final datos = await DBHelper.getEntrenamientosDelDia(_fechaSeleccionada);
+    final datos = await DBHelper.getEntrenamientosDelDiaUsuarioActivo(
+      _fechaSeleccionada,
+    );
     setState(() {
       entrenamientosDelDia = datos;
     });
@@ -69,7 +72,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ListTile(
                 leading: const Icon(Icons.show_chart, color: Colors.deepPurple),
                 title: const Text('Seguimiento'),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context); // Cierra el modal
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SeguimientoScreen(),
+                    ),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(
@@ -204,11 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 focusedDay: _fechaSeleccionada,
                 selectedDayPredicate:
                     (day) => isSameDay(_fechaSeleccionada, day),
-                onDaySelected: (selectedDay, focusedDay) {
+                onDaySelected: (selectedDay, focusedDay) async {
                   setState(() {
                     _fechaSeleccionada = selectedDay;
                   });
-                  cargarEntrenamientosDelDia();
+                  await cargarEntrenamientosDelDia();
                 },
                 eventLoader: (day) {
                   final key = DateTime(day.year, day.month, day.day);
@@ -277,8 +288,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                   if (resultado == true) {
-                    cargarEntrenamientosDelDia();
-                    cargarEventosCalendario();
+                    await cargarEntrenamientosDelDia();
+                    await cargarEventosCalendario();
                   }
                 },
               ),

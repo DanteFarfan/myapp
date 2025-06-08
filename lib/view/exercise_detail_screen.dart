@@ -67,6 +67,16 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   }
 
   void _guardarCambios() async {
+    final usuario = await DBHelper.getUsuarioActivo();
+
+    if (usuario == null) {
+      // Manejar error, no hay usuario activo
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No hay usuario activo.')));
+      return;
+    }
+
     final actualizado = DatosEntrenamiento(
       id: widget.entrenamiento.id,
       titulo: _tituloController.text,
@@ -78,10 +88,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       peso: double.tryParse(_pesoController.text),
       tiempo: _tiempoController.text,
       distancia: double.tryParse(_distanciaController.text),
+      idUsuario: usuario.id,
     );
 
     await DBHelper.update(actualizado);
-    Navigator.pop(context, true); // Notifica recarga a la pantalla anterior
+    Navigator.pop(context, true);
   }
 
   void _confirmarEliminacion() async {
