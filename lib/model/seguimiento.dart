@@ -36,4 +36,22 @@ class Seguimiento {
       valorRecord: map['valor_record']?.toDouble() ?? 0,
     );
   }
+
+  Seguimiento copyWith({
+    int? id,
+    int? idUsuario,
+    int? idEntrenamiento,
+    String? fechaEntrenamiento,
+    String? tipoRecord,
+    double? valorRecord,
+  }) {
+    return Seguimiento(
+      id: id ?? this.id,
+      idUsuario: idUsuario ?? this.idUsuario,
+      idEntrenamiento: idEntrenamiento ?? this.idEntrenamiento,
+      fechaEntrenamiento: fechaEntrenamiento ?? this.fechaEntrenamiento,
+      tipoRecord: tipoRecord ?? this.tipoRecord,
+      valorRecord: valorRecord ?? this.valorRecord,
+    );
+  }
 }

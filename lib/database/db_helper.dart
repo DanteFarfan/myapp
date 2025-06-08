@@ -61,8 +61,8 @@ class DBHelper {
             id_usuario INTEGER,
             id_entrenamiento INTEGER,
             fecha_entrenamiento TEXT,
-            record TEXT,
-            peso_record REAL
+            tipo_record TEXT,
+            valor_record REAL
           )
         ''');
       },
@@ -126,8 +126,8 @@ class DBHelper {
               id_usuario INTEGER,
               id_entrenamiento INTEGER,
               fecha_entrenamiento TEXT,
-              record TEXT,
-              peso_record REAL
+              tipo_record TEXT,
+              valor_record REAL
             )
           ''');
         }
@@ -311,13 +311,13 @@ class DBHelper {
     return await db.insert(tablaSeguimiento, seguimiento.toMap());
   }
 
-  // Obtener seguimiento por fecha y tipo
+  // Obtener seguimiento por usuario
   static Future<List<Seguimiento>> getSeguimientoPorUsuario(
     int idUsuario,
   ) async {
     final db = await getDB();
     final List<Map<String, dynamic>> maps = await db.query(
-      'seguimiento', // nombre de tu tabla
+      tablaSeguimiento,
       where: 'id_usuario = ?',
       whereArgs: [idUsuario],
       orderBy: 'fecha_entrenamiento ASC',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
+import 'package:myapp/model/seguimiento.dart';
 
 class AddExerciseScreen extends StatefulWidget {
   final DateTime? fechaSeleccionada;
@@ -67,7 +68,67 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         distancia: double.tryParse(_distanceController.text),
       );
 
-      await DBHelper.insert(nuevo);
+      // Inserta el ejercicio y obtén su ID
+      final ejercicioId = await DBHelper.insert(nuevo);
+
+      // Crear registros de seguimiento para los campos relevantes
+      final now = DateTime.now().toIso8601String();
+      if (nuevo.series != null) {
+        await DBHelper.insertSeguimiento(
+          Seguimiento(
+            idUsuario: usuario.id,
+            idEntrenamiento: ejercicioId,
+            fechaEntrenamiento: now,
+            tipoRecord: 'series',
+            valorRecord: nuevo.series!.toDouble(),
+          ),
+        );
+      }
+      if (nuevo.reps != null) {
+        await DBHelper.insertSeguimiento(
+          Seguimiento(
+            idUsuario: usuario.id,
+            idEntrenamiento: ejercicioId,
+            fechaEntrenamiento: now,
+            tipoRecord: 'reps',
+            valorRecord: nuevo.reps!.toDouble(),
+          ),
+        );
+      }
+      if (nuevo.peso != null) {
+        await DBHelper.insertSeguimiento(
+          Seguimiento(
+            idUsuario: usuario.id,
+            idEntrenamiento: ejercicioId,
+            fechaEntrenamiento: now,
+            tipoRecord: 'peso',
+            valorRecord: nuevo.peso!,
+          ),
+        );
+      }
+      if (nuevo.tiempo != null && double.tryParse(nuevo.tiempo!) != null) {
+        await DBHelper.insertSeguimiento(
+          Seguimiento(
+            idUsuario: usuario.id,
+            idEntrenamiento: ejercicioId,
+            fechaEntrenamiento: now,
+            tipoRecord: 'tiempo',
+            valorRecord: double.parse(nuevo.tiempo!),
+          ),
+        );
+      }
+      if (nuevo.distancia != null) {
+        await DBHelper.insertSeguimiento(
+          Seguimiento(
+            idUsuario: usuario.id,
+            idEntrenamiento: ejercicioId,
+            fechaEntrenamiento: now,
+            tipoRecord: 'distancia',
+            valorRecord: nuevo.distancia!,
+          ),
+        );
+      }
+
       Navigator.pop(context, true);
     }
   }

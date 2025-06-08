@@ -92,6 +92,35 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     );
 
     await DBHelper.update(actualizado);
+
+    // Actualizar seguimiento relacionado (si existe)
+    final seguimientos = await DBHelper.getSeguimientoPorUsuario(usuario.id);
+    for (final s in seguimientos.where(
+      (s) => s.idEntrenamiento == actualizado.id,
+    )) {
+      double? nuevoValor;
+      switch (s.tipoRecord) {
+        case 'series':
+          nuevoValor = actualizado.series?.toDouble();
+          break;
+        case 'reps':
+          nuevoValor = actualizado.reps?.toDouble();
+          break;
+        case 'peso':
+          nuevoValor = actualizado.peso;
+          break;
+        case 'tiempo':
+          nuevoValor = double.tryParse(actualizado.tiempo ?? '');
+          break;
+        case 'distancia':
+          nuevoValor = actualizado.distancia;
+          break;
+      }
+      if (nuevoValor != null) {
+        await DBHelper.updateSeguimiento(s.copyWith(valorRecord: nuevoValor));
+      }
+    }
+
     Navigator.pop(context, true);
   }
 
@@ -119,6 +148,18 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     );
 
     if (confirmacion == true) {
+      // Elimina los seguimientos relacionados antes de borrar el entrenamiento
+      final usuario = await DBHelper.getUsuarioActivo();
+      if (usuario != null) {
+        final seguimientos = await DBHelper.getSeguimientoPorUsuario(
+          usuario.id,
+        );
+        for (final s in seguimientos.where(
+          (s) => s.idEntrenamiento == widget.entrenamiento.id,
+        )) {
+          await DBHelper.deleteSeguimiento(s.id!);
+        }
+      }
       await DBHelper.delete(widget.entrenamiento.id!);
       Navigator.pop(context, true); // Notifica recarga a la pantalla anterior
     }

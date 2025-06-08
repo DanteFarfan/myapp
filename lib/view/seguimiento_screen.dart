@@ -69,8 +69,78 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
     }
 
     // Obtener todos los registros de seguimiento del usuario
-    final List<Seguimiento> todosRecords =
-        await DBHelper.getSeguimientoPorUsuario(usuario.id);
+    List<Seguimiento> todosRecords = await DBHelper.getSeguimientoPorUsuario(
+      usuario.id,
+    );
+
+    // Si no hay registros de seguimiento, intenta generarlos a partir de DatosEntrenamiento
+    if (todosRecords.isEmpty) {
+      final entrenamientos = await DBHelper.getEntrenamientosDelUsuario(
+        usuario.id,
+      );
+
+      for (final e in entrenamientos) {
+        final now = DateTime.now().toIso8601String();
+        if (e.series != null) {
+          await DBHelper.insertSeguimiento(
+            Seguimiento(
+              idUsuario: usuario.id,
+              idEntrenamiento: e.id,
+              fechaEntrenamiento: now,
+              tipoRecord: 'series',
+              valorRecord: e.series!.toDouble(),
+            ),
+          );
+        }
+        if (e.reps != null) {
+          await DBHelper.insertSeguimiento(
+            Seguimiento(
+              idUsuario: usuario.id,
+              idEntrenamiento: e.id,
+              fechaEntrenamiento: now,
+              tipoRecord: 'reps',
+              valorRecord: e.reps!.toDouble(),
+            ),
+          );
+        }
+        if (e.peso != null) {
+          await DBHelper.insertSeguimiento(
+            Seguimiento(
+              idUsuario: usuario.id,
+              idEntrenamiento: e.id,
+              fechaEntrenamiento: now,
+              tipoRecord: 'peso',
+              valorRecord: e.peso!,
+            ),
+          );
+        }
+        if (e.tiempo != null && double.tryParse(e.tiempo!) != null) {
+          await DBHelper.insertSeguimiento(
+            Seguimiento(
+              idUsuario: usuario.id,
+              idEntrenamiento: e.id,
+              fechaEntrenamiento: now,
+              tipoRecord: 'tiempo',
+              valorRecord: double.parse(e.tiempo!),
+            ),
+          );
+        }
+        if (e.distancia != null) {
+          await DBHelper.insertSeguimiento(
+            Seguimiento(
+              idUsuario: usuario.id,
+              idEntrenamiento: e.id,
+              fechaEntrenamiento: now,
+              tipoRecord: 'distancia',
+              valorRecord: e.distancia!,
+            ),
+          );
+        }
+      }
+
+      // Recarga los registros de seguimiento después de insertarlos
+      todosRecords = await DBHelper.getSeguimientoPorUsuario(usuario.id);
+    }
 
     // Filtrar por el tipo seleccionado
     final List<Seguimiento> registrosFiltrados =
