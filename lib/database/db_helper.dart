@@ -3,12 +3,14 @@ import 'package:path/path.dart';
 import '../model/datos_entrenamiento.dart';
 import '../model/usuario.dart';
 import '../model/seguimiento.dart';
+import '../model/plan_nutricion.dart';
 
 class DBHelper {
   static Database? _db;
   static const String tabla = 'DatosEntrenamiento';
   static const String tablaUsuarios = 'Usuarios';
   static const String tablaSeguimiento = 'Seguimiento';
+  static const String tablaPlanNutricion = 'PlanNutricion';
 
   @Deprecated('Usar con precaución, solo para pruebas')
   static Future<void> borrarBaseDeDatos() async {
@@ -63,6 +65,19 @@ class DBHelper {
             fecha_entrenamiento TEXT,
             tipo_record TEXT,
             valor_record REAL
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE $tablaPlanNutricion (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER,
+            peso REAL,
+            altura REAL,
+            edad INTEGER,
+            genero TEXT,
+            objetivo TEXT,
+            calorias REAL
           )
         ''');
       },
@@ -346,5 +361,37 @@ class DBHelper {
     final db = await getDB();
     final List<Map<String, dynamic>> maps = await db.query(tablaSeguimiento);
     return maps.map((e) => Seguimiento.fromMap(e)).toList();
+  }
+
+  // MÉTODOS DE NUTRICIÓN
+
+  // Guarda un plan de nutrición para el usuario activo
+  static Future<void> savePlanNutricion(PlanNutricion plan) async {
+    final db = await getDB();
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return;
+    // Elimina el plan anterior si existe (uno por usuario)
+    await db.delete(tablaPlanNutricion, where: 'id_usuario = ?', whereArgs: [usuario.id]);
+    await db.insert(tablaPlanNutricion, {
+      'id_usuario': usuario.id,
+      ...plan.toMap(),
+    });
+  }
+
+  // Obtiene el plan de nutrición del usuario activo
+  static Future<PlanNutricion?> getPlanNutricionUsuarioActivo() async {
+    final db = await getDB();
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return null;
+    final result = await db.query(
+      tablaPlanNutricion,
+      where: 'id_usuario = ?',
+      whereArgs: [usuario.id],
+      limit: 1,
+    );
+    if (result.isNotEmpty) {
+      return PlanNutricion.fromMap(result.first);
+    }
+    return null;
   }
 }

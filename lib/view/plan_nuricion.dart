@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/view/home_screen.dart';
+import 'package:myapp/model/plan_nutricion.dart';
+import 'package:myapp/database/db_helper.dart';
 
 class PlanNutricionScreen extends StatefulWidget {
   const PlanNutricionScreen({super.key});
@@ -16,8 +18,30 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
   String _genero = 'Masculino';
   String _objetivo = 'Bajar de peso';
   double? _calorias;
+  PlanNutricion? _planNutricion; // Instancia para guardar los datos
 
-  void _calcularCalorias() {
+  @override
+  void initState() {
+    super.initState();
+    _cargarPlanGuardado();
+  }
+
+  Future<void> _cargarPlanGuardado() async {
+    final plan = await DBHelper.getPlanNutricionUsuarioActivo();
+    if (plan != null) {
+      setState(() {
+        _planNutricion = plan;
+        _pesoController.text = plan.peso.toString();
+        _alturaController.text = plan.altura.toString();
+        _edadController.text = plan.edad.toString();
+        _genero = plan.genero;
+        _objetivo = plan.objetivo;
+        _calorias = plan.calorias;
+      });
+    }
+  }
+
+  void _calcularCalorias() async {
     if (_formKey.currentState!.validate()) {
       final peso = double.parse(_pesoController.text);
       final altura = double.parse(_alturaController.text);
@@ -39,14 +63,36 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         calorias = tmb + 500;
       }
 
+      final plan = PlanNutricion(
+        peso: peso,
+        altura: altura,
+        edad: edad,
+        genero: _genero,
+        objetivo: _objetivo,
+        calorias: calorias,
+      );
+
+      await DBHelper.savePlanNutricion(plan);
+
       setState(() {
         _calorias = calorias;
+        _planNutricion = plan;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Si hay datos guardados, autocompleta los campos (esto es útil si vuelves a la pantalla)
+    if (_planNutricion != null) {
+      _pesoController.text = _planNutricion!.peso.toString();
+      _alturaController.text = _planNutricion!.altura.toString();
+      _edadController.text = _planNutricion!.edad.toString();
+      _genero = _planNutricion!.genero;
+      _objetivo = _planNutricion!.objetivo;
+      _calorias = _planNutricion!.calorias;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plan de Nutrición'),
@@ -113,7 +159,10 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple,
                     ),
-                    child: const Text('Calcular calorías'),
+                    child: const Text(
+                      'Calcular calorías',
+                      style: TextStyle(color: Colors.white, fontSize: 16), // Más contraste
+                    ),
                   ),
                   const SizedBox(height: 20),
                   if (_calorias != null)
@@ -125,13 +174,29 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                         color: Colors.deepPurple,
                       ),
                     ),
+                  if (_planNutricion != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Text(
+                        'Datos guardados:\n'
+                        'Peso: ${_planNutricion!.peso} kg, '
+                        'Altura: ${_planNutricion!.altura} cm, '
+                        'Edad: ${_planNutricion!.edad}, '
+                        'Género: ${_planNutricion!.genero}, '
+                        'Objetivo: ${_planNutricion!.objetivo}',
+                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
             ElevatedButton.icon(
-              icon: const Icon(Icons.home),
-              label: const Text('Volver al inicio'),
+              icon: const Icon(Icons.home, color: Colors.white),
+              label: const Text(
+                'Volver al inicio',
+                style: TextStyle(color: Colors.white, fontSize: 16), // Más contraste
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
               ),
