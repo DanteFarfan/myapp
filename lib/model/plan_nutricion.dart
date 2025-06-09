@@ -1,4 +1,6 @@
 class PlanNutricion {
+  final int? id; // Nuevo: id del plan (opcional)
+  final int idUsuario; // Nuevo: id del usuario asociado
   final double peso;
   final double altura;
   final int edad;
@@ -7,6 +9,8 @@ class PlanNutricion {
   final double calorias;
 
   PlanNutricion({
+    this.id,
+    required this.idUsuario,
     required this.peso,
     required this.altura,
     required this.edad,
@@ -17,6 +21,8 @@ class PlanNutricion {
 
   Map<String, dynamic> toMap() {
     return {
+      if (id != null) 'id': id,
+      'id_usuario': idUsuario,
       'peso': peso,
       'altura': altura,
       'edad': edad,
@@ -28,12 +34,14 @@ class PlanNutricion {
 
   factory PlanNutricion.fromMap(Map<String, dynamic> map) {
     return PlanNutricion(
-      peso: map['peso'],
-      altura: map['altura'],
+      id: map['id'],
+      idUsuario: map['id_usuario'],
+      peso: (map['peso'] as num).toDouble(),
+      altura: (map['altura'] as num).toDouble(),
       edad: map['edad'],
       genero: map['genero'],
       objetivo: map['objetivo'],
-      calorias: map['calorias'],
+      calorias: (map['calorias'] as num).toDouble(),
     );
   }
 }

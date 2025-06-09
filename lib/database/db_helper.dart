@@ -11,6 +11,7 @@ class DBHelper {
   static const String tablaUsuarios = 'Usuarios';
   static const String tablaSeguimiento = 'Seguimiento';
   static const String tablaPlanNutricion = 'PlanNutricion';
+  static const String tablaHistorialPlanNutricion = 'HistorialPlanNutricion';
 
   @Deprecated('Usar con precaución, solo para pruebas')
   static Future<void> borrarBaseDeDatos() async {
@@ -25,7 +26,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -78,6 +79,20 @@ class DBHelper {
             genero TEXT,
             objetivo TEXT,
             calorias REAL
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE $tablaHistorialPlanNutricion (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER,
+            peso REAL,
+            altura REAL,
+            edad INTEGER,
+            genero TEXT,
+            objetivo TEXT,
+            calorias REAL,
+            fecha_guardado TEXT
           )
         ''');
       },
@@ -143,6 +158,21 @@ class DBHelper {
               fecha_entrenamiento TEXT,
               tipo_record TEXT,
               valor_record REAL
+            )
+          ''');
+        }
+        if (oldVersion < 8) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $tablaHistorialPlanNutricion (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              id_usuario INTEGER,
+              peso REAL,
+              altura REAL,
+              edad INTEGER,
+              genero TEXT,
+              objetivo TEXT,
+              calorias REAL,
+              fecha_guardado TEXT
             )
           ''');
         }
@@ -393,5 +423,35 @@ class DBHelper {
       return PlanNutricion.fromMap(result.first);
     }
     return null;
+  }
+
+  // Método para guardar en el historial
+  static Future<void> saveHistorialPlanNutricion(PlanNutricion plan) async {
+    final db = await getDB();
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return;
+    await db.insert(tablaHistorialPlanNutricion, {
+      'id_usuario': usuario.id,
+      'peso': plan.peso,
+      'altura': plan.altura,
+      'edad': plan.edad,
+      'genero': plan.genero,
+      'objetivo': plan.objetivo,
+      'calorias': plan.calorias,
+      'fecha_guardado': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // Método para obtener el historial del usuario activo
+  static Future<List<Map<String, dynamic>>> getHistorialPlanNutricionUsuarioActivo() async {
+    final db = await getDB();
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return [];
+    return await db.query(
+      tablaHistorialPlanNutricion,
+      where: 'id_usuario = ?',
+      whereArgs: [usuario.id],
+      orderBy: 'fecha_guardado DESC',
+    );
   }
 }

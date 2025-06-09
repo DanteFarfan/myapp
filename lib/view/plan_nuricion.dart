@@ -18,7 +18,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
   String _genero = 'Masculino';
   String _objetivo = 'Bajar de peso';
   double? _calorias;
-  PlanNutricion? _planNutricion; // Instancia para guardar los datos
+  PlanNutricion? _planNutricion;
 
   @override
   void initState() {
@@ -63,7 +63,12 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         calorias = tmb + 500;
       }
 
+      // Obtener el usuario activo para asociar el plan
+      final usuario = await DBHelper.getUsuarioActivo();
+      if (usuario == null) return;
+
       final plan = PlanNutricion(
+        idUsuario: usuario.id,
         peso: peso,
         altura: altura,
         edad: edad,
@@ -73,6 +78,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
       );
 
       await DBHelper.savePlanNutricion(plan);
+      await DBHelper.saveHistorialPlanNutricion(plan); // Guarda en el historial
 
       setState(() {
         _calorias = calorias;
@@ -81,9 +87,23 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
     }
   }
 
+  void _onGeneroChanged(String? value) {
+    setState(() {
+      _genero = value!;
+    });
+    _calcularCalorias();
+  }
+
+  void _onObjetivoChanged(String? value) {
+    setState(() {
+      _objetivo = value!;
+    });
+    _calcularCalorias();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Si hay datos guardados, autocompleta los campos (esto es útil si vuelves a la pantalla)
+    // Si hay datos guardados, autocompleta los campos
     if (_planNutricion != null) {
       _pesoController.text = _planNutricion!.peso.toString();
       _alturaController.text = _planNutricion!.altura.toString();
@@ -121,24 +141,39 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                   ),
                   TextFormField(
                     controller: _pesoController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Ingrese su peso' : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingrese su peso';
+                      final num? val = num.tryParse(value);
+                      if (val == null || val <= 0) return 'El peso debe ser mayor a 0';
+                      return null;
+                    },
+                    // Sin auto-cálculo aquí
+                    inputFormatters: [],
                   ),
                   TextFormField(
                     controller: _alturaController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Altura (cm)'),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Ingrese su altura' : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingrese su altura';
+                      final num? val = num.tryParse(value);
+                      if (val == null || val <= 0) return 'La altura debe ser mayor a 0';
+                      return null;
+                    },
+                    inputFormatters: [],
                   ),
                   TextFormField(
                     controller: _edadController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: 'Edad'),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Ingrese su edad' : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingrese su edad';
+                      final num? val = num.tryParse(value);
+                      if (val == null || val <= 0) return 'La edad debe ser mayor a 0';
+                      return null;
+                    },
                   ),
                   DropdownButtonFormField<String>(
                     value: _objetivo,
@@ -161,7 +196,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     ),
                     child: const Text(
                       'Calcular calorías',
-                      style: TextStyle(color: Colors.white, fontSize: 16), // Más contraste
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -190,12 +225,41 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                final historial = await DBHelper.getHistorialPlanNutricionUsuarioActivo();
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) => ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: historial.isEmpty
+                        ? [const Text('No hay historial.')]
+                        : historial.map((item) => ListTile(
+                            title: Text(
+                              'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
+                            ),
+                            subtitle: Text(
+                              'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
+                              'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
+                              'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
+                            ),
+                          )).toList(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              child: const Text(
+                'Ver historial',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
             const SizedBox(height: 40),
             ElevatedButton.icon(
               icon: const Icon(Icons.home, color: Colors.white),
               label: const Text(
                 'Volver al inicio',
-                style: TextStyle(color: Colors.white, fontSize: 16), // Más contraste
+                style: TextStyle(color: Colors.white, fontSize: 16),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
