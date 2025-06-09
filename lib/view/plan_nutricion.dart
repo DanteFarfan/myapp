@@ -130,8 +130,14 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     value: _genero,
                     decoration: const InputDecoration(labelText: 'Género'),
                     items: const [
-                      DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-                      DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
+                      DropdownMenuItem(
+                        value: 'Masculino',
+                        child: Text('Masculino'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Femenino',
+                        child: Text('Femenino'),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -141,12 +147,18 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                   ),
                   TextFormField(
                     controller: _pesoController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(labelText: 'Peso (kg)'),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Ingrese su peso';
+                      if (value == null || value.isEmpty) {
+                        return 'Ingrese su peso';
+                      }
                       final num? val = num.tryParse(value);
-                      if (val == null || val <= 0) return 'El peso debe ser mayor a 0';
+                      if (val == null || val <= 0) {
+                        return 'El peso debe ser mayor a 0';
+                      }
                       return null;
                     },
                     // Sin auto-cálculo aquí
@@ -154,12 +166,16 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                   ),
                   TextFormField(
                     controller: _alturaController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(labelText: 'Altura (cm)'),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Ingrese su altura';
+                      if (value == null || value.isEmpty)
+                        return 'Ingrese su altura';
                       final num? val = num.tryParse(value);
-                      if (val == null || val <= 0) return 'La altura debe ser mayor a 0';
+                      if (val == null || val <= 0)
+                        return 'La altura debe ser mayor a 0';
                       return null;
                     },
                     inputFormatters: [],
@@ -169,9 +185,11 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: 'Edad'),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Ingrese su edad';
+                      if (value == null || value.isEmpty)
+                        return 'Ingrese su edad';
                       final num? val = num.tryParse(value);
-                      if (val == null || val <= 0) return 'La edad debe ser mayor a 0';
+                      if (val == null || val <= 0)
+                        return 'La edad debe ser mayor a 0';
                       return null;
                     },
                   ),
@@ -179,8 +197,14 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     value: _objetivo,
                     decoration: const InputDecoration(labelText: 'Objetivo'),
                     items: const [
-                      DropdownMenuItem(value: 'Bajar de peso', child: Text('Bajar de peso')),
-                      DropdownMenuItem(value: 'Subir de peso', child: Text('Subir de peso')),
+                      DropdownMenuItem(
+                        value: 'Bajar de peso',
+                        child: Text('Bajar de peso'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Subir de peso',
+                        child: Text('Subir de peso'),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -219,7 +243,10 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                         'Edad: ${_planNutricion!.edad}, '
                         'Género: ${_planNutricion!.genero}, '
                         'Objetivo: ${_planNutricion!.objetivo}',
-                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
                 ],
@@ -228,27 +255,36 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                final historial = await DBHelper.getHistorialPlanNutricionUsuarioActivo();
+                final historial =
+                    await DBHelper.getHistorialPlanNutricionUsuarioActivo();
                 showModalBottomSheet(
                   context: context,
-                  builder: (context) => ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: historial.isEmpty
-                        ? [const Text('No hay historial.')]
-                        : historial.map((item) => ListTile(
-                            title: Text(
-                              'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
-                            ),
-                            subtitle: Text(
-                              'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
-                              'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
-                              'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
-                            ),
-                          )).toList(),
-                  ),
+                  builder:
+                      (context) => ListView(
+                        padding: const EdgeInsets.all(16),
+                        children:
+                            historial.isEmpty
+                                ? [const Text('No hay historial.')]
+                                : historial
+                                    .map(
+                                      (item) => ListTile(
+                                        title: Text(
+                                          'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
+                                        ),
+                                        subtitle: Text(
+                                          'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
+                                          'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
+                                          'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                      ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+              ),
               child: const Text(
                 'Ver historial',
                 style: TextStyle(color: Colors.white),

@@ -10,11 +10,7 @@ import 'package:myapp/database/db_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-<<<<<<< Updated upstream
   // await DBHelper.borrarBaseDeDatos();
-=======
-  await DBHelper.borrarBaseDeDatos();
->>>>>>> Stashed changes
 
   await initializeDateFormatting('es_ES', null);
   runApp(const MyApp());
