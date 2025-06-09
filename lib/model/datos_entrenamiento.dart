@@ -30,7 +30,7 @@ class DatosEntrenamiento {
       'id': id,
       'titulo': titulo,
       'descripcion': descripcion,
-      'fecha': fecha.toIso8601String(), // o .toString() si prefieres
+      'fecha': fecha.toIso8601String(),
       'orden': orden,
       'series': series,
       'reps': reps,
