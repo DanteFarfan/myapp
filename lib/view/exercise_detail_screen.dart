@@ -70,24 +70,176 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final usuario = await DBHelper.getUsuarioActivo();
 
     if (usuario == null) {
-      // Manejar error, no hay usuario activo
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('No hay usuario activo.')));
       return;
     }
 
+    if (_tituloController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'El título no puede estar vacío o solo contener espacios.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (_descripcionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La descripción no puede estar vacía o solo contener espacios.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final errors = <String>[];
+    bool algunDatoValido = false;
+    bool empiezaConCero(String s) =>
+        s.length > 1 && s.trim().startsWith('0') && !s.trim().startsWith('0.');
+
+    // Series
+    final seriesRaw = _seriesController.text;
+    final seriesTrim = seriesRaw.trim();
+    final series = seriesTrim.isEmpty ? null : int.tryParse(seriesTrim);
+    if (seriesRaw.isNotEmpty) {
+      if (seriesTrim.isEmpty) {
+        errors.add('Series no puede ser solo espacios.');
+      } else if (empiezaConCero(seriesTrim)) {
+        errors.add('Series tiene un valor invalido (no debe empezar con 0).');
+      } else if (series == null) {
+        errors.add('Series debe ser un número entero.');
+      } else if (series <= 0) {
+        errors.add('Series debe ser mayor que cero.');
+      } else if (series < 2) {
+        errors.add('Series debe ser al menos 2.');
+      } else {
+        algunDatoValido = true;
+      }
+    }
+
+    // Repeticiones
+    final repsRaw = _repsController.text;
+    final repsTrim = repsRaw.trim();
+    final reps = repsTrim.isEmpty ? null : int.tryParse(repsTrim);
+    if (repsRaw.isNotEmpty) {
+      if (repsTrim.isEmpty) {
+        errors.add('Repeticiones no puede ser solo espacios.');
+      } else if (empiezaConCero(repsTrim)) {
+        errors.add('Repeticiones tiene un valor invalido.');
+      } else if (reps == null) {
+        errors.add('Repeticiones debe ser un número entero.');
+      } else if (reps <= 0) {
+        errors.add('Repeticiones debe ser mayor que cero.');
+      } else if (reps < 2) {
+        errors.add('Repeticiones debe ser al menos 2.');
+      } else {
+        algunDatoValido = true;
+      }
+    }
+
+    // Peso (permitir decimales mayores a 0)
+    final pesoRaw = _pesoController.text;
+    final pesoTrim = pesoRaw.trim();
+    final peso = pesoTrim.isEmpty ? null : double.tryParse(pesoTrim);
+    if (pesoRaw.isNotEmpty) {
+      if (pesoTrim.isEmpty) {
+        errors.add('Peso no puede ser solo espacios.');
+      } else if (empiezaConCero(pesoTrim)) {
+        errors.add('Peso tiene un valor invalido.');
+      } else if (peso == null) {
+        errors.add('Peso debe ser un número.');
+      } else if (peso <= 0) {
+        errors.add('Peso debe ser mayor que cero.');
+      } else {
+        algunDatoValido = true;
+      }
+    }
+
+    // Tiempo (permitir decimales mayores a 0)
+    final tiempoRaw = _tiempoController.text;
+    final tiempoTrim = tiempoRaw.trim();
+    final tiempo = tiempoTrim.isEmpty ? null : tiempoTrim;
+    final tiempoDouble = tiempo != null ? double.tryParse(tiempo) : null;
+    if (tiempoRaw.isNotEmpty) {
+      if (tiempoTrim.isEmpty) {
+        errors.add('Tiempo no puede ser solo espacios.');
+      } else if (empiezaConCero(tiempoTrim)) {
+        errors.add('Tiempo tiene un valor invalido.');
+      } else if (tiempoDouble == null) {
+        errors.add('Tiempo debe ser un número.');
+      } else if (tiempoDouble <= 0) {
+        errors.add('Tiempo debe ser mayor que cero.');
+      } else if (tiempoDouble < 1) {
+        errors.add('Tiempo debe ser al menos 1 minuto.');
+      } else {
+        algunDatoValido = true;
+      }
+    }
+
+    // Distancia
+    final distanciaRaw = _distanciaController.text;
+    final distanciaTrim = distanciaRaw.trim();
+    final distancia =
+        distanciaTrim.isEmpty ? null : double.tryParse(distanciaTrim);
+    if (distanciaRaw.isNotEmpty) {
+      if (distanciaTrim.isEmpty) {
+        errors.add('Distancia no puede ser solo espacios.');
+      } else if (empiezaConCero(distanciaTrim)) {
+        errors.add('Distancia tiene un valor invalido.');
+      } else if (distancia == null) {
+        errors.add('Distancia debe ser un número.');
+      } else if (distancia <= 0) {
+        errors.add('Distancia debe ser mayor que cero.');
+      } else {
+        algunDatoValido = true;
+      }
+    }
+
+    // Orden
+    final ordenRaw = _ordenController.text;
+    final ordenTrim = ordenRaw.trim();
+    final orden = ordenTrim.isEmpty ? null : int.tryParse(ordenTrim);
+    if (ordenRaw.isNotEmpty) {
+      if (ordenTrim.isEmpty) {
+        errors.add('Orden no puede ser solo espacios.');
+      } else if (empiezaConCero(ordenTrim)) {
+        errors.add('Orden tiene un valor invalido.');
+      } else if (orden == null) {
+        errors.add('Orden debe ser un número entero.');
+      } else if (orden <= 0) {
+        errors.add('Orden debe ser mayor que cero.');
+      }
+    }
+
+    if (!algunDatoValido) {
+      errors.add(
+        'Debes ingresar al menos un dato válido en los detalles del entrenamiento.',
+      );
+    }
+
+    if (errors.isNotEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errors.join('\n'))));
+      return;
+    }
+
     final actualizado = DatosEntrenamiento(
       id: widget.entrenamiento.id,
-      titulo: _tituloController.text,
-      descripcion: _descripcionController.text,
+      titulo: _tituloController.text.trim(),
+      descripcion: _descripcionController.text.trim(),
       fecha: widget.entrenamiento.fecha,
-      orden: int.tryParse(_ordenController.text),
-      series: int.tryParse(_seriesController.text),
-      reps: int.tryParse(_repsController.text),
-      peso: double.tryParse(_pesoController.text),
-      tiempo: _tiempoController.text,
-      distancia: double.tryParse(_distanciaController.text),
+      orden: orden,
+      series: series,
+      reps: reps,
+      peso: peso,
+      tiempo: tiempo,
+      distancia: distancia,
       idUsuario: usuario.id,
     );
 
