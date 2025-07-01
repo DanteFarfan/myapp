@@ -63,6 +63,20 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         calorias = tmb + 500;
       }
 
+      // Si el cálculo da menos que cero, muestra un error y no guarda
+      if (calorias <= 0) {
+        setState(() {
+          _calorias = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('El cálculo de calorías no puede ser menor o igual a cero. Revisa tus datos.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       // Obtener el usuario activo para asociar el plan
       final usuario = await DBHelper.getUsuarioActivo();
       if (usuario == null) return;
@@ -85,20 +99,6 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         _planNutricion = plan;
       });
     }
-  }
-
-  void _onGeneroChanged(String? value) {
-    setState(() {
-      _genero = value!;
-    });
-    _calcularCalorias();
-  }
-
-  void _onObjetivoChanged(String? value) {
-    setState(() {
-      _objetivo = value!;
-    });
-    _calcularCalorias();
   }
 
   @override
@@ -128,7 +128,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     value: _genero,
-                    decoration: const InputDecoration(labelText: 'Género'),
+                    decoration: const InputDecoration(labelText: 'Sexo'),
                     items: const [
                       DropdownMenuItem(
                         value: 'Masculino',
@@ -171,11 +171,13 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     ),
                     decoration: const InputDecoration(labelText: 'Altura (cm)'),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Ingrese su altura';
+                      }
                       final num? val = num.tryParse(value);
-                      if (val == null || val <= 0)
+                      if (val == null || val <= 0) {
                         return 'La altura debe ser mayor a 0';
+                      }
                       return null;
                     },
                     inputFormatters: [],
@@ -185,11 +187,13 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: 'Edad'),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Ingrese su edad';
+                      }
                       final num? val = num.tryParse(value);
-                      if (val == null || val <= 0)
+                      if (val == null || val <= 0) {
                         return 'La edad debe ser mayor a 0';
+                      }
                       return null;
                     },
                   ),

@@ -5,10 +5,10 @@ import 'package:myapp/view/exercise_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
+import 'package:myapp/view/plan_nutricion.dart';
 // import 'package:myapp/view/usuario_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:myapp/view/seguimiento_screen.dart';
-import 'package:myapp/view/plan_nuricion.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
