@@ -4,7 +4,7 @@ class PlanNutricion {
   final double peso;
   final double altura;
   final int edad;
-  final String genero;
+  final String sexo; // Cambiado de genero a sexo
   final String objetivo;
   final double calorias;
 
@@ -14,7 +14,7 @@ class PlanNutricion {
     required this.peso,
     required this.altura,
     required this.edad,
-    required this.genero,
+    required this.sexo, // Cambiado de genero a sexo
     required this.objetivo,
     required this.calorias,
   });
@@ -26,7 +26,7 @@ class PlanNutricion {
       'peso': peso,
       'altura': altura,
       'edad': edad,
-      'genero': genero,
+      'sexo': sexo, // Cambiado de genero a sexo
       'objetivo': objetivo,
       'calorias': calorias,
     };
@@ -39,7 +39,7 @@ class PlanNutricion {
       peso: (map['peso'] as num).toDouble(),
       altura: (map['altura'] as num).toDouble(),
       edad: map['edad'],
-      genero: map['genero'],
+      sexo: map['sexo'], // Cambiado de genero a sexo
       objetivo: map['objetivo'],
       calorias: (map['calorias'] as num).toDouble(),
     );
