@@ -45,10 +45,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               hoy.day < fechaNacimiento.day)) {
         edad--;
       }
-      if (edad < 0 || edad > 120) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Edad no válida.')));
+      if (edad < 3 || edad > 120) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('La edad debe ser entre 3 y 120 años.')),
+        );
         return;
       }
 
