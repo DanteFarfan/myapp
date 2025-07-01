@@ -76,7 +76,7 @@ class DBHelper {
             peso REAL,
             altura REAL,
             edad INTEGER,
-            genero TEXT,
+            sexo TEXT, -- Cambiado de genero a sexo
             objetivo TEXT,
             calorias REAL
           )
@@ -89,7 +89,7 @@ class DBHelper {
             peso REAL,
             altura REAL,
             edad INTEGER,
-            genero TEXT,
+            sexo TEXT, -- Cambiado de genero a sexo
             objetivo TEXT,
             calorias REAL,
             fecha_guardado TEXT
@@ -169,7 +169,7 @@ class DBHelper {
               peso REAL,
               altura REAL,
               edad INTEGER,
-              genero TEXT,
+              sexo TEXT, -- Cambiado de genero a sexo
               objetivo TEXT,
               calorias REAL,
               fecha_guardado TEXT
@@ -408,7 +408,12 @@ class DBHelper {
     );
     await db.insert(tablaPlanNutricion, {
       'id_usuario': usuario.id,
-      ...plan.toMap(),
+      'peso': plan.peso,
+      'altura': plan.altura,
+      'edad': plan.edad,
+      'sexo': plan.sexo, // Cambiado de genero a sexo
+      'objetivo': plan.objetivo,
+      'calorias': plan.calorias,
     });
   }
 
@@ -439,7 +444,7 @@ class DBHelper {
       'peso': plan.peso,
       'altura': plan.altura,
       'edad': plan.edad,
-      'genero': plan.genero,
+      'sexo': plan.sexo, // Cambiado de genero a sexo
       'objetivo': plan.objetivo,
       'calorias': plan.calorias,
       'fecha_guardado': DateTime.now().toIso8601String(),

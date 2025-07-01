@@ -15,13 +15,14 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
   final TextEditingController _edadController = TextEditingController();
-  String _genero = 'Masculino';
+  String _sexo = 'Masculino'; // Cambiado de _genero a _sexo
   String _objetivo = 'Bajar de peso';
   double? _calorias;
   PlanNutricion? _planNutricion;
 
   // Declara variables para los valores seleccionados en los dropdowns
-  final _generoKey = GlobalKey<FormFieldState>();
+  final _sexoKey =
+      GlobalKey<FormFieldState>(); // Cambiado de _generoKey a _sexoKey
   final _objetivoKey = GlobalKey<FormFieldState>();
 
   @override
@@ -38,7 +39,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         _pesoController.text = plan.peso.toString();
         _alturaController.text = plan.altura.toString();
         _edadController.text = plan.edad.toString();
-        _genero = plan.genero;
+        _sexo = plan.sexo; // Cambiado de genero a sexo
         _objetivo = plan.objetivo;
         _calorias = plan.calorias;
       });
@@ -52,7 +53,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
       final edad = int.parse(_edadController.text);
 
       // Obtén los valores actuales de los dropdowns usando sus keys
-      final generoActual = _generoKey.currentState?.value ?? _genero;
+      final sexoActual = _sexoKey.currentState?.value ?? _sexo;
       final objetivoActual = _objetivoKey.currentState?.value ?? _objetivo;
 
       // Verifica si hay usuario activo
@@ -71,7 +72,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
 
       // Fórmula de Harris-Benedict (simplificada)
       double tmb;
-      if (generoActual == 'Masculino') {
+      if (sexoActual == 'Masculino') {
         tmb = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * edad);
       } else {
         tmb = 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * edad);
@@ -105,7 +106,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
         peso: peso,
         altura: altura,
         edad: edad,
-        genero: generoActual,
+        sexo: sexoActual, // Cambiado de genero a sexo
         objetivo: objetivoActual,
         calorias: calorias,
       );
@@ -116,7 +117,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
       setState(() {
         _calorias = calorias;
         _planNutricion = plan;
-        _genero = generoActual;
+        _sexo = sexoActual; // Cambiado de genero a sexo
         _objetivo = objetivoActual;
       });
     }
@@ -129,7 +130,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
       _pesoController.text = _planNutricion!.peso.toString();
       _alturaController.text = _planNutricion!.altura.toString();
       _edadController.text = _planNutricion!.edad.toString();
-      _genero = _planNutricion!.genero;
+      _sexo = _planNutricion!.sexo; // Cambiado de genero a sexo
       _objetivo = _planNutricion!.objetivo;
       _calorias = _planNutricion!.calorias;
     }
@@ -148,8 +149,8 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
               child: Column(
                 children: [
                   DropdownButtonFormField<String>(
-                    key: _generoKey,
-                    value: _genero,
+                    key: _sexoKey, // Cambiado de _generoKey a _sexoKey
+                    value: _sexo,
                     decoration: const InputDecoration(labelText: 'Sexo'),
                     items: const [
                       DropdownMenuItem(
@@ -163,7 +164,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     ],
                     onChanged: (value) {
                       setState(() {
-                        _genero = value!;
+                        _sexo = value!;
                       });
                     },
                   ),
@@ -268,7 +269,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                         'Peso: ${_planNutricion!.peso} kg, '
                         'Altura: ${_planNutricion!.altura} cm, '
                         'Edad: ${_planNutricion!.edad}, '
-                        'Género: ${_planNutricion!.genero}, '
+                        'Sexo: ${_planNutricion!.sexo}, ' // Cambiado de genero a sexo
                         'Objetivo: ${_planNutricion!.objetivo}',
                         style: const TextStyle(
                           fontSize: 14,
@@ -302,7 +303,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                                                 'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
                                               ),
                                               subtitle: Text(
-                                                'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
+                                                'Sexo: ${item['sexo']}, Objetivo: ${item['objetivo']}\n'
                                                 'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
                                                 'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
                                               ),
