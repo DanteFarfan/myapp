@@ -135,6 +135,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   true,
                   obscure: true,
                   minLength: 4,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Campo requerido';
+                    }
+                    if (value.length < 4) {
+                      return 'La contraseña debe tener al menos 4 caracteres.';
+                    }
+                    if (value.contains(' ')) {
+                      return 'La contraseña no puede contener espacios.';
+                    }
+                    if (value.trim().isEmpty) {
+                      return 'La contraseña no puede estar vacía ni tener solo espacios.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
                 _campo(
