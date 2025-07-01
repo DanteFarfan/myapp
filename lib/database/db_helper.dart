@@ -401,7 +401,11 @@ class DBHelper {
     final usuario = await getUsuarioActivo();
     if (usuario == null) return;
     // Elimina el plan anterior si existe (uno por usuario)
-    await db.delete(tablaPlanNutricion, where: 'id_usuario = ?', whereArgs: [usuario.id]);
+    await db.delete(
+      tablaPlanNutricion,
+      where: 'id_usuario = ?',
+      whereArgs: [usuario.id],
+    );
     await db.insert(tablaPlanNutricion, {
       'id_usuario': usuario.id,
       ...plan.toMap(),
@@ -443,7 +447,8 @@ class DBHelper {
   }
 
   // Método para obtener el historial del usuario activo
-  static Future<List<Map<String, dynamic>>> getHistorialPlanNutricionUsuarioActivo() async {
+  static Future<List<Map<String, dynamic>>>
+  getHistorialPlanNutricionUsuarioActivo() async {
     final db = await getDB();
     final usuario = await getUsuarioActivo();
     if (usuario == null) return [];
@@ -452,6 +457,17 @@ class DBHelper {
       where: 'id_usuario = ?',
       whereArgs: [usuario.id],
       orderBy: 'fecha_guardado DESC',
+    );
+  }
+
+  static Future<void> borrarHistorialPlanNutricionUsuarioActivo() async {
+    final db = await getDB();
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return;
+    await db.delete(
+      tablaHistorialPlanNutricion,
+      where: 'id_usuario = ?',
+      whereArgs: [usuario.id],
     );
   }
 }

@@ -20,6 +20,10 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
   double? _calorias;
   PlanNutricion? _planNutricion;
 
+  // Declara variables para los valores seleccionados en los dropdowns
+  final _generoKey = GlobalKey<FormFieldState>();
+  final _objetivoKey = GlobalKey<FormFieldState>();
+
   @override
   void initState() {
     super.initState();
@@ -47,9 +51,27 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
       final altura = double.parse(_alturaController.text);
       final edad = int.parse(_edadController.text);
 
+      // Obtén los valores actuales de los dropdowns usando sus keys
+      final generoActual = _generoKey.currentState?.value ?? _genero;
+      final objetivoActual = _objetivoKey.currentState?.value ?? _objetivo;
+
+      // Verifica si hay usuario activo
+      final usuario = await DBHelper.getUsuarioActivo();
+      if (usuario == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Debes iniciar sesión para calcular y guardar tu plan nutricional.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       // Fórmula de Harris-Benedict (simplificada)
       double tmb;
-      if (_genero == 'Masculino') {
+      if (generoActual == 'Masculino') {
         tmb = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * edad);
       } else {
         tmb = 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * edad);
@@ -57,46 +79,45 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
 
       // Ajuste según objetivo
       double calorias;
-      if (_objetivo == 'Bajar de peso') {
+      if (objetivoActual == 'Bajar de peso') {
         calorias = tmb - 500;
       } else {
         calorias = tmb + 500;
       }
 
-      // Si el cálculo da menos que cero, muestra un error y no guarda
       if (calorias <= 0) {
         setState(() {
           _calorias = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('El cálculo de calorías no puede ser menor o igual a cero. Revisa tus datos.'),
+            content: Text(
+              'El cálculo de calorías no puede ser menor o igual a cero. Revisa tus datos.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
 
-      // Obtener el usuario activo para asociar el plan
-      final usuario = await DBHelper.getUsuarioActivo();
-      if (usuario == null) return;
-
       final plan = PlanNutricion(
         idUsuario: usuario.id,
         peso: peso,
         altura: altura,
         edad: edad,
-        genero: _genero,
-        objetivo: _objetivo,
+        genero: generoActual,
+        objetivo: objetivoActual,
         calorias: calorias,
       );
 
       await DBHelper.savePlanNutricion(plan);
-      await DBHelper.saveHistorialPlanNutricion(plan); // Guarda en el historial
+      await DBHelper.saveHistorialPlanNutricion(plan);
 
       setState(() {
         _calorias = calorias;
         _planNutricion = plan;
+        _genero = generoActual;
+        _objetivo = objetivoActual;
       });
     }
   }
@@ -127,6 +148,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
               child: Column(
                 children: [
                   DropdownButtonFormField<String>(
+                    key: _generoKey,
                     value: _genero,
                     decoration: const InputDecoration(labelText: 'Sexo'),
                     items: const [
@@ -198,6 +220,7 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                     },
                   ),
                   DropdownButtonFormField<String>(
+                    key: _objetivoKey,
                     value: _objetivo,
                     decoration: const InputDecoration(labelText: 'Objetivo'),
                     items: const [
@@ -264,25 +287,54 @@ class _PlanNutricionScreenState extends State<PlanNutricionScreen> {
                 showModalBottomSheet(
                   context: context,
                   builder:
-                      (context) => ListView(
-                        padding: const EdgeInsets.all(16),
-                        children:
-                            historial.isEmpty
-                                ? [const Text('No hay historial.')]
-                                : historial
-                                    .map(
-                                      (item) => ListTile(
-                                        title: Text(
-                                          'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
-                                        ),
-                                        subtitle: Text(
-                                          'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
-                                          'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
-                                          'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
+                      (context) => Column(
+                        children: [
+                          Expanded(
+                            child: ListView(
+                              padding: const EdgeInsets.all(16),
+                              children:
+                                  historial.isEmpty
+                                      ? [const Text('No hay historial.')]
+                                      : historial
+                                          .map(
+                                            (item) => ListTile(
+                                              title: Text(
+                                                'Peso: ${item['peso']} kg, Altura: ${item['altura']} cm, Edad: ${item['edad']}',
+                                              ),
+                                              subtitle: Text(
+                                                'Género: ${item['genero']}, Objetivo: ${item['objetivo']}\n'
+                                                'Calorías: ${item['calorias'].toStringAsFixed(0)} kcal\n'
+                                                'Fecha: ${item['fecha_guardado'].toString().substring(0, 19).replaceFirst("T", " ")}',
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.delete, color: Colors.white),
+                            label: const Text(
+                              'Borrar historial',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () async {
+                              await DBHelper.borrarHistorialPlanNutricionUsuarioActivo();
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Historial borrado correctamente.',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ),
                 );
               },
