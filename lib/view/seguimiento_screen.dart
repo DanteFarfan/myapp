@@ -50,6 +50,7 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
   List<double> valores = [];
   List<String> fechas = [];
   TipoDato tipoSeleccionado = TipoDato.peso;
+  String? _errorMsg; // <-- Agrega esta variable
 
   @override
   void initState() {
@@ -64,6 +65,7 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
         spots = [];
         valores = [];
         fechas = [];
+        _errorMsg = 'No hay usuario activo.';
       });
       return;
     }
@@ -155,6 +157,7 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
         spots = [];
         valores = [];
         fechas = [];
+        _errorMsg = 'No hay datos para mostrar para el tipo seleccionado.\n';
       });
       return;
     }
@@ -181,6 +184,7 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
         valores.length,
         (i) => FlSpot(i.toDouble() + 1, valores[i]),
       );
+      _errorMsg = null;
     });
   }
 
@@ -235,7 +239,20 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
             Expanded(
               child:
                   valores.isEmpty
-                      ? const Center(child: Text('No hay datos para mostrar'))
+                      ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            // Mostrar solo el error más reciente si existe
+                            _errorMsg ?? 'No hay datos para mostrar.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      )
                       : AspectRatio(
                         aspectRatio: 1.7,
                         child: LineChart(
