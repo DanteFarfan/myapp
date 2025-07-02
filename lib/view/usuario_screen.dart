@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/model/usuario.dart';
 import 'package:myapp/database/db_helper.dart';
+import 'package:intl/intl.dart';
 
 class UsuarioScreen extends StatefulWidget {
   final Usuario usuario;
@@ -35,54 +36,89 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
     final nacimientoController = TextEditingController(
       text: _usuario.fechaNacimiento,
     );
-    final pesoController = TextEditingController(
-      text: _usuario.peso.toString(),
-    );
-    final edadController = TextEditingController(
-      text: _usuario.edad.toString(),
-    );
+    int edadCalculada = _usuario.edad;
+
+    void actualizarEdad() {
+      try {
+        final fecha = DateTime.parse(nacimientoController.text);
+        final hoy = DateTime.now();
+        int edad = hoy.year - fecha.year;
+        if (hoy.month < fecha.month ||
+            (hoy.month == fecha.month && hoy.day < fecha.day)) {
+          edad--;
+        }
+        edadCalculada = edad;
+      } catch (_) {
+        edadCalculada = 0;
+      }
+    }
+
+    actualizarEdad();
 
     final confirm = await showDialog<bool>(
       context: context,
       builder:
-          (_) => AlertDialog(
-            title: const Text('Editar datos de usuario'),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _campoTexto(nombreController, 'Nombre de usuario'),
-                  _campoTexto(correoController, 'Correo electrónico'),
-                  _campoTexto(
-                    nacimientoController,
-                    'Fecha de nacimiento (AAAA-MM-DD)',
+          (_) => StatefulBuilder(
+            builder:
+                (context, setStateDialog) => AlertDialog(
+                  title: const Text('Editar datos de usuario'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _campoTexto(nombreController, 'Nombre de usuario'),
+                        _campoTexto(correoController, 'Correo electrónico'),
+                        TextField(
+                          controller: nacimientoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Fecha de nacimiento (dd/mm/aaaa)',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) {
+                            setStateDialog(() {
+                              // No mostrar ni recalcular edad aquí
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  _campoTexto(pesoController, 'Peso (kg)', isNumber: true),
-                  _campoTexto(edadController, 'Edad', isNumber: true),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Guardar'),
-              ),
-            ],
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Guardar'),
+                    ),
+                  ],
+                ),
           ),
     );
 
     if (confirm == true) {
       final db = await DBHelper.getDB();
 
+      // Calcula la edad correctamente al guardar
+      int edadCalculada = 0;
+      try {
+        final fecha = DateTime.parse(nacimientoController.text);
+        final hoy = DateTime.now();
+        int edad = hoy.year - fecha.year;
+        if (hoy.month < fecha.month ||
+            (hoy.month == fecha.month && hoy.day < fecha.day)) {
+          edad--;
+        }
+        edadCalculada = edad;
+      } catch (_) {
+        edadCalculada = 0;
+      }
+
       final nuevosDatos = <String, Object>{
         'username': nombreController.text.trim(),
         'correo_electronico': correoController.text.trim(),
         'fecha_nacimiento': nacimientoController.text.trim(),
-        'peso': double.tryParse(pesoController.text.trim()) ?? 0.0,
-        'edad': int.tryParse(edadController.text.trim()) ?? 0,
+        'edad': edadCalculada,
       };
 
       await db.update(
@@ -93,13 +129,38 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
       );
 
       setState(() {
+        // Calcula la edad usando la fecha de nacimiento actualizada
+        int edadActualizada = 0;
+        try {
+          DateTime fechaNac;
+          // Intenta parsear en ambos formatos
+          if (_esFechaISO(nuevosDatos['fecha_nacimiento'] as String)) {
+            fechaNac = DateTime.parse(
+              nuevosDatos['fecha_nacimiento'] as String,
+            );
+          } else {
+            fechaNac = DateFormat(
+              'dd/MM/yyyy',
+            ).parseStrict(nuevosDatos['fecha_nacimiento'] as String);
+          }
+          final hoy = DateTime.now();
+          int edad = hoy.year - fechaNac.year;
+          if (hoy.month < fechaNac.month ||
+              (hoy.month == fechaNac.month && hoy.day < fechaNac.day)) {
+            edad--;
+          }
+          edadActualizada = edad;
+        } catch (_) {
+          edadActualizada = 0;
+        }
+
         _usuario = Usuario(
           id: _usuario.id,
           username: nuevosDatos['username'] as String,
           correoElectronico: nuevosDatos['correo_electronico'] as String,
           fechaNacimiento: nuevosDatos['fecha_nacimiento'] as String,
-          peso: nuevosDatos['peso'] as double,
-          edad: nuevosDatos['edad'] as int,
+          peso: _usuario.peso,
+          edad: edadActualizada,
           fechaRegistro: _usuario.fechaRegistro,
           password: _usuario.password,
           activo: _usuario.activo,
@@ -192,6 +253,15 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Formatea la fecha de registro a dd/mm/aaaa
+    String fechaRegistroFormateada = '-';
+    try {
+      final fecha = DateTime.parse(_usuario.fechaRegistro);
+      fechaRegistroFormateada = DateFormat('dd/MM/yyyy').format(fecha);
+    } catch (_) {
+      fechaRegistroFormateada = _usuario.fechaRegistro;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -234,13 +304,18 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
               _info('Usuario', _usuario.username),
               _info('Correo', _usuario.correoElectronico),
               _info('Nacimiento', _usuario.fechaNacimiento),
-              _info('Peso', _usuario.peso.toString()),
               _info('Edad', _usuario.edad.toString()),
-              _info('Registrado el', _usuario.fechaRegistro),
+              _info('Registrado el', fechaRegistroFormateada),
             ],
           ),
         ),
       ),
     );
+  }
+
+  bool _esFechaISO(String fecha) {
+    // Verifica si la fecha es tipo aaaa-mm-dd
+    final isoReg = RegExp(r'^\d{4}-\d{2}-\d{2}');
+    return isoReg.hasMatch(fecha);
   }
 }
