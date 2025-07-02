@@ -243,7 +243,6 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Text(
-                            // Mostrar solo el error más reciente si existe
                             _errorMsg ?? 'No hay datos para mostrar.',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
@@ -253,44 +252,69 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
                           ),
                         ),
                       )
-                      : AspectRatio(
-                        aspectRatio: 1.7,
-                        child: LineChart(
-                          LineChartData(
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: true),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, _) {
-                                    int index = value.toInt() - 1;
-                                    return Text(
-                                      index >= 0 && index < fechas.length
-                                          ? fechas[index].substring(5)
-                                          : '',
-                                      style: const TextStyle(fontSize: 10),
-                                    );
-                                  },
-                                  interval: 1,
+                      : Center(
+                        // Centra el gráfico horizontal y verticalmente
+                        child: AspectRatio(
+                          aspectRatio:
+                              0.6, // Cambia este valor para ajustar el tamaño del gráfico
+                          child: LineChart(
+                            LineChartData(
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 18,
+                                    interval: null,
+                                    getTitlesWidget: (value, meta) {
+                                      // Mostrar los números en horizontal, no en vertical
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 2,
+                                        ),
+                                        child: Text(
+                                          value.toStringAsFixed(0),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (value, _) {
+                                      int index = value.toInt() - 1;
+                                      return Text(
+                                        index >= 0 && index < fechas.length
+                                            ? fechas[index].substring(5)
+                                            : '',
+                                        style: const TextStyle(fontSize: 10),
+                                      );
+                                    },
+                                    interval: 1,
+                                  ),
                                 ),
                               ),
+                              gridData: FlGridData(show: true),
+                              borderData: FlBorderData(show: true),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  color: Colors.deepPurple,
+                                  dotData: FlDotData(show: true),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    color: Colors.deepPurple.withOpacity(0.3),
+                                  ),
+                                ),
+                              ],
                             ),
-                            gridData: FlGridData(show: true),
-                            borderData: FlBorderData(show: true),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: spots,
-                                isCurved: true,
-                                color: Colors.deepPurple,
-                                dotData: FlDotData(show: true),
-                                belowBarData: BarAreaData(
-                                  show: true,
-                                  color: Colors.deepPurple.withOpacity(0.3),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
