@@ -36,24 +36,11 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
     final nacimientoController = TextEditingController(
       text: _usuario.fechaNacimiento,
     );
-    int edadCalculada = _usuario.edad;
+    final contrasenaActualController = TextEditingController();
+    final contrasenaNuevaController = TextEditingController();
 
-    void actualizarEdad() {
-      try {
-        final fecha = DateTime.parse(nacimientoController.text);
-        final hoy = DateTime.now();
-        int edad = hoy.year - fecha.year;
-        if (hoy.month < fecha.month ||
-            (hoy.month == fecha.month && hoy.day < fecha.day)) {
-          edad--;
-        }
-        edadCalculada = edad;
-      } catch (_) {
-        edadCalculada = 0;
-      }
-    }
-
-    actualizarEdad();
+    bool cambiarContrasena = false;
+    String? errorContrasena;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -73,12 +60,47 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
                             labelText: 'Fecha de nacimiento (dd/mm/aaaa)',
                             border: OutlineInputBorder(),
                           ),
-                          onChanged: (value) {
+                        ),
+                        const SizedBox(height: 16),
+                        CheckboxListTile(
+                          title: const Text('Cambiar contraseña'),
+                          value: cambiarContrasena,
+                          onChanged: (val) {
                             setStateDialog(() {
-                              // No mostrar ni recalcular edad aquí
+                              cambiarContrasena = val ?? false;
+                              errorContrasena = null;
                             });
                           },
+                          controlAffinity: ListTileControlAffinity.leading,
                         ),
+                        if (cambiarContrasena) ...[
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: contrasenaActualController,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Contraseña actual',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: contrasenaNuevaController,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Nueva contraseña',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          if (errorContrasena != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                errorContrasena!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                   ),
@@ -88,7 +110,43 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
                       child: const Text('Cancelar'),
                     ),
                     ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
+                      onPressed: () {
+                        if (cambiarContrasena) {
+                          // Validar contraseña anterior
+                          if (contrasenaActualController.text !=
+                              _usuario.password) {
+                            setStateDialog(() {
+                              errorContrasena =
+                                  'La contraseña actual es incorrecta';
+                            });
+                            return;
+                          }
+                          // Validar nueva contraseña
+                          final nueva = contrasenaNuevaController.text;
+                          if (nueva.length < 4) {
+                            setStateDialog(() {
+                              errorContrasena =
+                                  'La nueva contraseña debe tener al menos 4 caracteres.';
+                            });
+                            return;
+                          }
+                          if (nueva.contains(' ')) {
+                            setStateDialog(() {
+                              errorContrasena =
+                                  'La nueva contraseña no puede contener espacios.';
+                            });
+                            return;
+                          }
+                          if (nueva.trim().isEmpty) {
+                            setStateDialog(() {
+                              errorContrasena =
+                                  'La nueva contraseña no puede estar vacía.';
+                            });
+                            return;
+                          }
+                        }
+                        Navigator.pop(context, true);
+                      },
                       child: const Text('Guardar'),
                     ),
                   ],
@@ -102,11 +160,18 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
       // Calcula la edad correctamente al guardar
       int edadCalculada = 0;
       try {
-        final fecha = DateTime.parse(nacimientoController.text);
+        DateTime fechaNac;
+        if (_esFechaISO(nacimientoController.text.trim())) {
+          fechaNac = DateTime.parse(nacimientoController.text.trim());
+        } else {
+          fechaNac = DateFormat(
+            'dd/MM/yyyy',
+          ).parseStrict(nacimientoController.text.trim());
+        }
         final hoy = DateTime.now();
-        int edad = hoy.year - fecha.year;
-        if (hoy.month < fecha.month ||
-            (hoy.month == fecha.month && hoy.day < fecha.day)) {
+        int edad = hoy.year - fechaNac.year;
+        if (hoy.month < fechaNac.month ||
+            (hoy.month == fechaNac.month && hoy.day < fechaNac.day)) {
           edad--;
         }
         edadCalculada = edad;
@@ -121,6 +186,11 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
         'edad': edadCalculada,
       };
 
+      // Si se cambia la contraseña, agrégala al update
+      if (cambiarContrasena && contrasenaNuevaController.text.isNotEmpty) {
+        nuevosDatos['password'] = contrasenaNuevaController.text;
+      }
+
       await db.update(
         DBHelper.tablaUsuarios,
         nuevosDatos,
@@ -129,40 +199,15 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
       );
 
       setState(() {
-        // Calcula la edad usando la fecha de nacimiento actualizada
-        int edadActualizada = 0;
-        try {
-          DateTime fechaNac;
-          // Intenta parsear en ambos formatos
-          if (_esFechaISO(nuevosDatos['fecha_nacimiento'] as String)) {
-            fechaNac = DateTime.parse(
-              nuevosDatos['fecha_nacimiento'] as String,
-            );
-          } else {
-            fechaNac = DateFormat(
-              'dd/MM/yyyy',
-            ).parseStrict(nuevosDatos['fecha_nacimiento'] as String);
-          }
-          final hoy = DateTime.now();
-          int edad = hoy.year - fechaNac.year;
-          if (hoy.month < fechaNac.month ||
-              (hoy.month == fechaNac.month && hoy.day < fechaNac.day)) {
-            edad--;
-          }
-          edadActualizada = edad;
-        } catch (_) {
-          edadActualizada = 0;
-        }
-
         _usuario = Usuario(
           id: _usuario.id,
           username: nuevosDatos['username'] as String,
           correoElectronico: nuevosDatos['correo_electronico'] as String,
           fechaNacimiento: nuevosDatos['fecha_nacimiento'] as String,
           peso: _usuario.peso,
-          edad: edadActualizada,
+          edad: nuevosDatos['edad'] as int,
           fechaRegistro: _usuario.fechaRegistro,
-          password: _usuario.password,
+          password: nuevosDatos['password'] as String? ?? _usuario.password,
           activo: _usuario.activo,
         );
       });
