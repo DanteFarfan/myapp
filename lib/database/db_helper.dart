@@ -6,6 +6,7 @@ import '../model/seguimiento.dart';
 import '../model/plan_nutricion.dart';
 import '../model/seguimiento_medidas.dart';
 import '../model/notas.dart';
+import '../model/plantilla_ejercicio.dart';
 
 class DBHelper {
   static Database? _db;
@@ -120,6 +121,7 @@ class DBHelper {
             fecha TEXT
           )
         ''');
+        await _createPlantillaTable(db); // Asegura crear la tabla de plantillas
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         final columnasMap = await db.rawQuery(
@@ -223,6 +225,9 @@ class DBHelper {
               fecha TEXT
             )
           ''');
+        }
+        if (oldVersion < 11) {
+          await _createPlantillaTable(db);
         }
       },
     );
@@ -632,5 +637,48 @@ class DBHelper {
       orderBy: 'fecha DESC',
     );
     return maps.map((e) => NotaDia.fromMap(e)).toList();
+  }
+
+  // MÉTODOS DE PLANTILLA DE EJERCICIO
+
+  static Future<void> insertPlantilla(PlantillaEjercicio plantilla) async {
+    final db = await getDB();
+    await db.insert(
+      'PlantillaEjercicio',
+      plantilla.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<void> updatePlantilla(PlantillaEjercicio plantilla) async {
+    final db = await getDB();
+    await db.update(
+      'PlantillaEjercicio',
+      plantilla.toMap(),
+      where: 'id = ?',
+      whereArgs: [plantilla.id],
+    );
+  }
+
+  static Future<List<PlantillaEjercicio>> getPlantillas() async {
+    final db = await getDB();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'PlantillaEjercicio',
+    );
+    return maps.map((e) => PlantillaEjercicio.fromMap(e)).toList();
+  }
+
+  static Future<void> _createPlantillaTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS PlantillaEjercicio (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT,
+        track_series INTEGER,
+        track_reps INTEGER,
+        track_peso INTEGER,
+        track_distancia INTEGER,
+        track_tiempo INTEGER
+      )
+    ''');
   }
 }
