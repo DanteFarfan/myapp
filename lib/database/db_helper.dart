@@ -681,4 +681,9 @@ class DBHelper {
       )
     ''');
   }
+
+  static Future<void> deletePlantilla(int id) async {
+    final db = await getDB();
+    await db.delete('PlantillaEjercicio', where: 'id = ?', whereArgs: [id]);
+  }
 }
