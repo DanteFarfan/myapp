@@ -192,7 +192,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _agregarOEditarNota({NotaDia? notaEditar}) async {
     final usuario = await DBHelper.getUsuarioActivo();
-    if (usuario == null) return;
+    if (usuario == null) {
+      // Muestra un error si no hay sesión iniciada
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Debes iniciar sesión para agregar o editar notas.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
     final controller = TextEditingController(text: notaEditar?.texto ?? '');
     final confirm = await showDialog<bool>(
       context: context,
@@ -253,7 +264,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () async {
                   if (controller.text.trim().isEmpty) return;
                   if (notaEditar == null) {
-                    // Usa la fecha seleccionada, no DateTime.now()
                     await DBHelper.insertNota(
                       NotaDia(
                         idUsuario: usuario.id,
@@ -271,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         id: notaEditar.id,
                         idUsuario: usuario.id,
                         texto: controller.text.trim(),
-                        fecha: notaEditar.fecha, // Mantén la fecha original
+                        fecha: notaEditar.fecha,
                       ),
                     );
                   }
@@ -404,25 +414,121 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
             const SizedBox(height: 20),
             if (notasDelDia.isNotEmpty)
-              ...notasDelDia.map(
-                (nota) => Card(
-                  color: Colors.yellow[50],
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    leading: const Icon(Icons.note, color: Colors.deepPurple),
-                    title: Text(
-                      nota.texto,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    subtitle: Text(
-                      'Nota del día',
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.deepPurple),
-                      onPressed: () => _agregarOEditarNota(notaEditar: nota),
-                    ),
+              Card(
+                color: Colors.yellow[50],
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                child: ListTile(
+                  leading: const Icon(Icons.note, color: Colors.deepPurple),
+                  title: Text(
+                    notasDelDia.length == 1
+                        ? notasDelDia.first.texto
+                        : 'Ver todas las notas del día',
+                    style: const TextStyle(fontSize: 16),
                   ),
+                  subtitle: Text(
+                    notasDelDia.length == 1
+                        ? 'Nota del día'
+                        : '${notasDelDia.length} notas registradas',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(
+                      notasDelDia.length == 1 ? Icons.edit : Icons.list,
+                      color: Colors.deepPurple,
+                    ),
+                    onPressed: () {
+                      if (notasDelDia.length == 1) {
+                        _agregarOEditarNota(notaEditar: notasDelDia.first);
+                      } else {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('Notas del día'),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: notasDelDia.length,
+                                    itemBuilder: (context, i) {
+                                      final nota = notasDelDia[i];
+                                      return ListTile(
+                                        leading: const Icon(
+                                          Icons.note,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        title: Text(nota.texto),
+                                        trailing: IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.deepPurple,
+                                          ),
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _agregarOEditarNota(
+                                              notaEditar: nota,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cerrar'),
+                                  ),
+                                ],
+                              ),
+                        );
+                      }
+                    },
+                  ),
+                  onTap: () {
+                    if (notasDelDia.length > 1) {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('Notas del día'),
+                              content: SizedBox(
+                                width: double.maxFinite,
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: notasDelDia.length,
+                                  itemBuilder: (context, i) {
+                                    final nota = notasDelDia[i];
+                                    return ListTile(
+                                      leading: const Icon(
+                                        Icons.note,
+                                        color: Colors.deepPurple,
+                                      ),
+                                      title: Text(nota.texto),
+                                      trailing: IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _agregarOEditarNota(notaEditar: nota);
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cerrar'),
+                                ),
+                              ],
+                            ),
+                      );
+                    }
+                  },
                 ),
               ),
             SizedBox(
