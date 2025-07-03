@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 import 'package:myapp/model/seguimiento.dart';
+import 'package:myapp/view/crear_plantilla_ejercicio.dart';
 
 class AddExerciseScreen extends StatefulWidget {
   final DateTime? fechaSeleccionada;
@@ -202,6 +203,36 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         return;
       }
 
+      // Verificar si ya existe un ejercicio con el mismo nombre y fecha
+      final inicio = DateTime(
+        widget.fechaSeleccionada!.year,
+        widget.fechaSeleccionada!.month,
+        widget.fechaSeleccionada!.day,
+      );
+      final fin = inicio.add(const Duration(days: 1));
+      final db = await DBHelper.getDB();
+      final existe = await db.query(
+        DBHelper.tabla,
+        where: 'titulo = ? AND fecha >= ? AND fecha < ? AND id_usuario = ?',
+        whereArgs: [
+          _nameController.text.trim(),
+          inicio.toIso8601String(),
+          fin.toIso8601String(),
+          usuario.id,
+        ],
+      );
+      if (existe.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Ya existe un ejercicio con ese nombre para este día.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final nuevo = DatosEntrenamiento(
         idUsuario: usuario.id,
         titulo: _nameController.text.trim(),
@@ -383,6 +414,32 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.view_list, color: Colors.white),
+                  label: const Text(
+                    'Usar plantilla',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple.shade300,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CrearPlantillaScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 55,
