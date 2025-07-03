@@ -88,8 +88,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           errors.add('Series debe ser un número entero.');
         } else if (series <= 0) {
           errors.add('Series debe ser mayor que cero.');
-        } else if (series < 2) {
-          errors.add('Series debe ser al menos 2.');
+        } else if (series < 1) {
+          errors.add('Series debe ser al menos 1.');
         } else {
           algunDatoValido = true;
         }
@@ -108,8 +108,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           errors.add('Repeticiones debe ser un número entero.');
         } else if (reps <= 0) {
           errors.add('Repeticiones debe ser mayor que cero.');
-        } else if (reps < 2) {
-          errors.add('Repeticiones debe ser al menos 2.');
+        } else if (reps < 1) {
+          errors.add('Repeticiones debe ser al menos 1.');
         } else {
           algunDatoValido = true;
         }
