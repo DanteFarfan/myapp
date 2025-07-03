@@ -4,6 +4,7 @@ import '../model/datos_entrenamiento.dart';
 import '../model/usuario.dart';
 import '../model/seguimiento.dart';
 import '../model/plan_nutricion.dart';
+import '../model/seguimiento_medidas.dart';
 
 class DBHelper {
   static Database? _db;
@@ -12,6 +13,7 @@ class DBHelper {
   static const String tablaSeguimiento = 'Seguimiento';
   static const String tablaPlanNutricion = 'PlanNutricion';
   static const String tablaHistorialPlanNutricion = 'HistorialPlanNutricion';
+  static const String tablaMedidas = 'Medidas';
 
   @Deprecated('Usar con precaución, solo para pruebas')
   static Future<void> borrarBaseDeDatos() async {
@@ -26,7 +28,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -93,6 +95,18 @@ class DBHelper {
             objetivo TEXT,
             calorias REAL,
             fecha_guardado TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE $tablaMedidas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER,
+            nombre TEXT,
+            descripcion TEXT,
+            valor REAL,
+            unidad TEXT,
+            fecha TEXT
           )
         ''');
       },
@@ -173,6 +187,19 @@ class DBHelper {
               objetivo TEXT,
               calorias REAL,
               fecha_guardado TEXT
+            )
+          ''');
+        }
+        if (oldVersion < 9) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $tablaMedidas (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              id_usuario INTEGER,
+              nombre TEXT,
+              descripcion TEXT,
+              valor REAL,
+              unidad TEXT,
+              fecha TEXT
             )
           ''');
         }
@@ -473,6 +500,67 @@ class DBHelper {
       tablaHistorialPlanNutricion,
       where: 'id_usuario = ?',
       whereArgs: [usuario.id],
+    );
+  }
+
+  // MÉTODOS DE MEDIDAS
+
+  static Future<void> insertMedida(Medida medida) async {
+    final db = await getDB();
+    await db.insert(tablaMedidas, medida.toMap());
+  }
+
+  static Future<void> updateMedida(Medida medida) async {
+    final db = await getDB();
+    await db.update(
+      tablaMedidas,
+      medida.toMap(),
+      where: 'id = ?',
+      whereArgs: [medida.id],
+    );
+  }
+
+  static Future<List<Medida>> getMedidasUsuarioActivo() async {
+    final usuario = await getUsuarioActivo();
+    if (usuario == null) return [];
+    final db = await getDB();
+    final maps = await db.query(
+      tablaMedidas,
+      where: 'id_usuario = ?',
+      whereArgs: [usuario.id],
+      orderBy: 'fecha DESC',
+    );
+    return maps.map((e) => Medida.fromMap(e)).toList();
+  }
+
+  static Future<void> deleteUltimaMedidaPorNombre(
+    int idUsuario,
+    String nombre,
+  ) async {
+    final db = await getDB();
+    // Busca la última medida (más reciente) por nombre y usuario
+    final result = await db.query(
+      tablaMedidas,
+      where: 'id_usuario = ? AND nombre = ?',
+      whereArgs: [idUsuario, nombre],
+      orderBy: 'fecha DESC',
+      limit: 1,
+    );
+    if (result.isNotEmpty) {
+      final id = result.first['id'];
+      await db.delete(tablaMedidas, where: 'id = ?', whereArgs: [id]);
+    }
+  }
+
+  static Future<void> deleteMedidasPorNombre(
+    int idUsuario,
+    String nombre,
+  ) async {
+    final db = await getDB();
+    await db.delete(
+      tablaMedidas,
+      where: 'id_usuario = ? AND LOWER(nombre) = ?',
+      whereArgs: [idUsuario, nombre.toLowerCase()],
     );
   }
 }
