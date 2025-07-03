@@ -39,13 +39,14 @@ class DBHelper {
             titulo TEXT,
             descripcion TEXT,
             fecha TEXT,
-            orden INTEGER,
+            -- orden INTEGER, // eliminado
             series INTEGER,
             reps INTEGER,
             peso REAL,
             tiempo TEXT,
             distancia REAL,
-            id_usuario INTEGER
+            id_usuario INTEGER,
+            id_plantilla INTEGER
           )
         ''');
 
@@ -369,7 +370,7 @@ class DBHelper {
       tabla,
       where: 'id_usuario = ?',
       whereArgs: [idUsuario],
-      orderBy: 'fecha ASC, orden ASC',
+      orderBy: 'fecha ASC', // quitar ', orden ASC'
     );
     return maps.map((e) => DatosEntrenamiento.fromMap(e)).toList();
   }

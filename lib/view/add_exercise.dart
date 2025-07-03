@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/database/db_helper.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 import 'package:myapp/model/seguimiento.dart';
-import 'package:myapp/view/crear_plantilla_ejercicio.dart';
+import 'package:myapp/model/plantilla_ejercicio.dart';
 
 class AddExerciseScreen extends StatefulWidget {
   final DateTime? fechaSeleccionada;
@@ -22,7 +22,25 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   final _seriesController = TextEditingController();
   final _distanceController = TextEditingController();
   final _timeController = TextEditingController();
-  final _orderController = TextEditingController();
+
+  List<PlantillaEjercicio> _plantillas = [];
+  PlantillaEjercicio? _plantillaSeleccionada;
+
+  // Controla si los campos se muestran (solo si hay plantilla seleccionada)
+  bool get _usarPlantilla => _plantillaSeleccionada != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPlantillas();
+  }
+
+  Future<void> _cargarPlantillas() async {
+    final plantillas = await DBHelper.getPlantillas();
+    setState(() {
+      _plantillas = plantillas;
+    });
+  }
 
   @override
   void dispose() {
@@ -33,8 +51,56 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     _seriesController.dispose();
     _distanceController.dispose();
     _timeController.dispose();
-    _orderController.dispose();
     super.dispose();
+  }
+
+  void _seleccionarPlantilla() async {
+    final seleccionada = await showDialog<PlantillaEjercicio>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Seleccionar plantilla'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child:
+                _plantillas.isEmpty
+                    ? const Text('No hay plantillas registradas.')
+                    : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _plantillas.length,
+                      itemBuilder: (context, index) {
+                        final plantilla = _plantillas[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.list_alt,
+                            color: Colors.deepPurple,
+                          ),
+                          title: Text(plantilla.nombre),
+                          onTap: () => Navigator.pop(context, plantilla),
+                        );
+                      },
+                    ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+    if (seleccionada != null) {
+      setState(() {
+        _plantillaSeleccionada = seleccionada;
+        _nameController.text = seleccionada.nombre;
+        _seriesController.clear();
+        _repsController.clear();
+        _weightController.clear();
+        _distanceController.clear();
+        _timeController.clear();
+      });
+    }
   }
 
   void _saveExercise() async {
@@ -174,22 +240,6 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         }
       }
 
-      // Orden
-      final ordenRaw = _orderController.text;
-      final ordenTrim = ordenRaw.trim();
-      final orden = ordenTrim.isEmpty ? null : int.tryParse(ordenTrim);
-      if (ordenRaw.isNotEmpty) {
-        if (ordenTrim.isEmpty) {
-          errors.add('Orden no puede ser solo espacios.');
-        } else if (empiezaConCero(ordenTrim)) {
-          errors.add('Orden tiene un valor invalido.');
-        } else if (orden == null) {
-          errors.add('Orden debe ser un número entero.');
-        } else if (orden <= 0) {
-          errors.add('Orden debe ser mayor que cero.');
-        }
-      }
-
       if (!algunDatoValido) {
         errors.add(
           'Debes ingresar al menos un dato válido en los detalles del entrenamiento.',
@@ -203,47 +253,21 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         return;
       }
 
-      // Verificar si ya existe un ejercicio con el mismo nombre y fecha
-      final inicio = DateTime(
-        widget.fechaSeleccionada!.year,
-        widget.fechaSeleccionada!.month,
-        widget.fechaSeleccionada!.day,
-      );
-      final fin = inicio.add(const Duration(days: 1));
-      final db = await DBHelper.getDB();
-      final existe = await db.query(
-        DBHelper.tabla,
-        where: 'titulo = ? AND fecha >= ? AND fecha < ? AND id_usuario = ?',
-        whereArgs: [
-          _nameController.text.trim(),
-          inicio.toIso8601String(),
-          fin.toIso8601String(),
-          usuario.id,
-        ],
-      );
-      if (existe.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Ya existe un ejercicio con ese nombre para este día.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+      // Permitir múltiples ejercicios con el mismo nombre en el mismo día,
+      // pero solo si la hora es diferente (o simplemente permitir duplicados)
+      // Por lo tanto, eliminamos la validación de unicidad por nombre y fecha.
 
       final nuevo = DatosEntrenamiento(
         idUsuario: usuario.id,
         titulo: _nameController.text.trim(),
         descripcion: _descriptionController.text.trim(),
         fecha: widget.fechaSeleccionada ?? DateTime.now(),
-        orden: orden,
         series: series,
         reps: reps,
         peso: peso,
         tiempo: tiempo,
         distancia: distancia,
+        idPlantilla: _plantillaSeleccionada?.id,
       );
 
       // Inserta el ejercicio y obtén su ID
@@ -323,6 +347,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final plantilla = _plantillaSeleccionada;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
       appBar: AppBar(
@@ -352,6 +378,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                   'Nombre',
                   Icons.fitness_center,
                 ),
+                enabled: false, // No editable
                 validator:
                     (value) =>
                         value == null || value.isEmpty
@@ -369,59 +396,28 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              TextFormField(
-                controller: _orderController,
-                decoration: _buildInputDecoration(
-                  'Orden',
-                  Icons.format_list_numbered,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _seriesController,
-                decoration: _buildInputDecoration('Series', Icons.looks_3),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _repsController,
-                decoration: _buildInputDecoration('Repeticiones', Icons.repeat),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _weightController,
-                decoration: _buildInputDecoration(
-                  'Peso (kg)',
-                  Icons.line_weight,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _distanceController,
-                decoration: _buildInputDecoration(
-                  'Distancia (km)',
-                  Icons.directions_run,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _timeController,
-                decoration: _buildInputDecoration('Tiempo (min)', Icons.timer),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 30),
+              // Eliminar campo de orden:
+              // TextFormField(
+              //   controller: _orderController,
+              //   decoration: _buildInputDecoration(
+              //     'Orden',
+              //     Icons.format_list_numbered,
+              //   ),
+              //   keyboardType: TextInputType.number,
+              // ),
+              // const SizedBox(height: 16),
+
+              // Botón para seleccionar plantilla
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.view_list, color: Colors.white),
-                  label: const Text(
-                    'Usar plantilla',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  label: Text(
+                    plantilla == null
+                        ? 'Usar plantilla'
+                        : 'Plantilla: ${plantilla.nombre}',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple.shade300,
@@ -429,17 +425,66 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CrearPlantillaScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _seleccionarPlantilla,
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Solo muestra los campos si hay plantilla seleccionada, según la plantilla
+              if (_usarPlantilla && plantilla!.trackSeries) ...[
+                TextFormField(
+                  controller: _seriesController,
+                  decoration: _buildInputDecoration('Series', Icons.looks_3),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_usarPlantilla && plantilla!.trackReps) ...[
+                TextFormField(
+                  controller: _repsController,
+                  decoration: _buildInputDecoration(
+                    'Repeticiones',
+                    Icons.repeat,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_usarPlantilla && plantilla!.trackPeso) ...[
+                TextFormField(
+                  controller: _weightController,
+                  decoration: _buildInputDecoration(
+                    'Peso (kg)',
+                    Icons.line_weight,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_usarPlantilla && plantilla!.trackDistancia) ...[
+                TextFormField(
+                  controller: _distanceController,
+                  decoration: _buildInputDecoration(
+                    'Distancia (km)',
+                    Icons.directions_run,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_usarPlantilla && plantilla!.trackTiempo) ...[
+                TextFormField(
+                  controller: _timeController,
+                  decoration: _buildInputDecoration(
+                    'Tiempo (min)',
+                    Icons.timer,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Si no hay plantilla seleccionada, no muestra ningún campo extra
               SizedBox(
                 width: double.infinity,
                 height: 55,

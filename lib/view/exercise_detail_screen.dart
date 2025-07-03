@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/model/datos_entrenamiento.dart';
 import 'package:myapp/database/db_helper.dart';
+import 'package:myapp/model/plantilla_ejercicio.dart';
 
 class ExerciseDetailScreen extends StatefulWidget {
   final DatosEntrenamiento entrenamiento;
@@ -15,7 +16,7 @@ class ExerciseDetailScreen extends StatefulWidget {
 class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   late TextEditingController _tituloController;
   late TextEditingController _descripcionController;
-  late TextEditingController _ordenController;
+  // late TextEditingController _ordenController; // eliminar esta línea
   late TextEditingController _seriesController;
   late TextEditingController _repsController;
   late TextEditingController _pesoController;
@@ -23,6 +24,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   late TextEditingController _distanciaController;
 
   bool _editMode = false;
+  PlantillaEjercicio? _plantilla;
 
   @override
   void initState() {
@@ -33,9 +35,9 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     _descripcionController = TextEditingController(
       text: widget.entrenamiento.descripcion,
     );
-    _ordenController = TextEditingController(
-      text: widget.entrenamiento.orden?.toString() ?? '',
-    );
+    // _ordenController = TextEditingController(
+    //   text: widget.entrenamiento.orden?.toString() ?? '',
+    // );
     _seriesController = TextEditingController(
       text: widget.entrenamiento.series?.toString() ?? '',
     );
@@ -51,13 +53,31 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     _distanciaController = TextEditingController(
       text: widget.entrenamiento.distancia?.toString() ?? '',
     );
+    _cargarPlantilla();
+  }
+
+  Future<void> _cargarPlantilla() async {
+    if (widget.entrenamiento.idPlantilla != null) {
+      final plantillas = await DBHelper.getPlantillas();
+      final plantillaList = plantillas.where(
+        (p) => p.id == widget.entrenamiento.idPlantilla,
+      );
+      final plantilla = plantillaList.isNotEmpty ? plantillaList.first : null;
+      setState(() {
+        _plantilla = plantilla;
+      });
+    } else {
+      setState(() {
+        _plantilla = null;
+      });
+    }
   }
 
   @override
   void dispose() {
     _tituloController.dispose();
     _descripcionController.dispose();
-    _ordenController.dispose();
+    // _ordenController.dispose();
     _seriesController.dispose();
     _repsController.dispose();
     _pesoController.dispose();
@@ -103,116 +123,115 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         s.length > 1 && s.trim().startsWith('0') && !s.trim().startsWith('0.');
 
     // Series
+    int? series;
     final seriesRaw = _seriesController.text;
     final seriesTrim = seriesRaw.trim();
-    final series = seriesTrim.isEmpty ? null : int.tryParse(seriesTrim);
-    if (seriesRaw.isNotEmpty) {
-      if (seriesTrim.isEmpty) {
-        errors.add('Series no puede ser solo espacios.');
-      } else if (empiezaConCero(seriesTrim)) {
-        errors.add('Series tiene un valor invalido (no debe empezar con 0).');
-      } else if (series == null) {
-        errors.add('Series debe ser un número entero.');
-      } else if (series <= 0) {
-        errors.add('Series debe ser mayor que cero.');
-      } else if (series < 2) {
-        errors.add('Series debe ser al menos 2.');
-      } else {
-        algunDatoValido = true;
+    if (_plantilla == null || _plantilla!.trackSeries) {
+      series = seriesTrim.isEmpty ? null : int.tryParse(seriesTrim);
+      if (seriesRaw.isNotEmpty) {
+        if (seriesTrim.isEmpty) {
+          errors.add('Series no puede ser solo espacios.');
+        } else if (empiezaConCero(seriesTrim)) {
+          errors.add('Series tiene un valor invalido (no debe empezar con 0).');
+        } else if (series == null) {
+          errors.add('Series debe ser un número entero.');
+        } else if (series <= 0) {
+          errors.add('Series debe ser mayor que cero.');
+        } else if (series < 2) {
+          errors.add('Series debe ser al menos 2.');
+        } else {
+          algunDatoValido = true;
+        }
       }
     }
 
     // Repeticiones
+    int? reps;
     final repsRaw = _repsController.text;
     final repsTrim = repsRaw.trim();
-    final reps = repsTrim.isEmpty ? null : int.tryParse(repsTrim);
-    if (repsRaw.isNotEmpty) {
-      if (repsTrim.isEmpty) {
-        errors.add('Repeticiones no puede ser solo espacios.');
-      } else if (empiezaConCero(repsTrim)) {
-        errors.add('Repeticiones tiene un valor invalido.');
-      } else if (reps == null) {
-        errors.add('Repeticiones debe ser un número entero.');
-      } else if (reps <= 0) {
-        errors.add('Repeticiones debe ser mayor que cero.');
-      } else if (reps < 2) {
-        errors.add('Repeticiones debe ser al menos 2.');
-      } else {
-        algunDatoValido = true;
+    if (_plantilla == null || _plantilla!.trackReps) {
+      reps = repsTrim.isEmpty ? null : int.tryParse(repsTrim);
+      if (repsRaw.isNotEmpty) {
+        if (repsTrim.isEmpty) {
+          errors.add('Repeticiones no puede ser solo espacios.');
+        } else if (empiezaConCero(repsTrim)) {
+          errors.add('Repeticiones tiene un valor invalido.');
+        } else if (reps == null) {
+          errors.add('Repeticiones debe ser un número entero.');
+        } else if (reps <= 0) {
+          errors.add('Repeticiones debe ser mayor que cero.');
+        } else if (reps < 2) {
+          errors.add('Repeticiones debe ser al menos 2.');
+        } else {
+          algunDatoValido = true;
+        }
       }
     }
 
-    // Peso (permitir decimales mayores a 0)
+    // Peso
+    double? peso;
     final pesoRaw = _pesoController.text;
     final pesoTrim = pesoRaw.trim();
-    final peso = pesoTrim.isEmpty ? null : double.tryParse(pesoTrim);
-    if (pesoRaw.isNotEmpty) {
-      if (pesoTrim.isEmpty) {
-        errors.add('Peso no puede ser solo espacios.');
-      } else if (empiezaConCero(pesoTrim)) {
-        errors.add('Peso tiene un valor invalido.');
-      } else if (peso == null) {
-        errors.add('Peso debe ser un número.');
-      } else if (peso <= 0) {
-        errors.add('Peso debe ser mayor que cero.');
-      } else {
-        algunDatoValido = true;
+    if (_plantilla == null || _plantilla!.trackPeso) {
+      peso = pesoTrim.isEmpty ? null : double.tryParse(pesoTrim);
+      if (pesoRaw.isNotEmpty) {
+        if (pesoTrim.isEmpty) {
+          errors.add('Peso no puede ser solo espacios.');
+        } else if (empiezaConCero(pesoTrim)) {
+          errors.add('Peso tiene un valor invalido.');
+        } else if (peso == null) {
+          errors.add('Peso debe ser un número.');
+        } else if (peso <= 0) {
+          errors.add('Peso debe ser mayor que cero.');
+        } else {
+          algunDatoValido = true;
+        }
       }
     }
 
-    // Tiempo (permitir decimales mayores a 0)
+    // Tiempo
+    String? tiempo;
     final tiempoRaw = _tiempoController.text;
     final tiempoTrim = tiempoRaw.trim();
-    final tiempo = tiempoTrim.isEmpty ? null : tiempoTrim;
-    final tiempoDouble = tiempo != null ? double.tryParse(tiempo) : null;
-    if (tiempoRaw.isNotEmpty) {
-      if (tiempoTrim.isEmpty) {
-        errors.add('Tiempo no puede ser solo espacios.');
-      } else if (empiezaConCero(tiempoTrim)) {
-        errors.add('Tiempo tiene un valor invalido.');
-      } else if (tiempoDouble == null) {
-        errors.add('Tiempo debe ser un número.');
-      } else if (tiempoDouble <= 0) {
-        errors.add('Tiempo debe ser mayor que cero.');
-      } else if (tiempoDouble < 1) {
-        errors.add('Tiempo debe ser al menos 1 minuto.');
-      } else {
-        algunDatoValido = true;
+    double? tiempoDouble;
+    if (_plantilla == null || _plantilla!.trackTiempo) {
+      tiempo = tiempoTrim.isEmpty ? null : tiempoTrim;
+      tiempoDouble = tiempo != null ? double.tryParse(tiempo) : null;
+      if (tiempoRaw.isNotEmpty) {
+        if (tiempoTrim.isEmpty) {
+          errors.add('Tiempo no puede ser solo espacios.');
+        } else if (empiezaConCero(tiempoTrim)) {
+          errors.add('Tiempo tiene un valor invalido.');
+        } else if (tiempoDouble == null) {
+          errors.add('Tiempo debe ser un número.');
+        } else if (tiempoDouble <= 0) {
+          errors.add('Tiempo debe ser mayor que cero.');
+        } else if (tiempoDouble < 1) {
+          errors.add('Tiempo debe ser al menos 1 minuto.');
+        } else {
+          algunDatoValido = true;
+        }
       }
     }
 
     // Distancia
+    double? distancia;
     final distanciaRaw = _distanciaController.text;
     final distanciaTrim = distanciaRaw.trim();
-    final distancia =
-        distanciaTrim.isEmpty ? null : double.tryParse(distanciaTrim);
-    if (distanciaRaw.isNotEmpty) {
-      if (distanciaTrim.isEmpty) {
-        errors.add('Distancia no puede ser solo espacios.');
-      } else if (empiezaConCero(distanciaTrim)) {
-        errors.add('Distancia tiene un valor invalido.');
-      } else if (distancia == null) {
-        errors.add('Distancia debe ser un número.');
-      } else if (distancia <= 0) {
-        errors.add('Distancia debe ser mayor que cero.');
-      } else {
-        algunDatoValido = true;
-      }
-    }
-
-    // Orden
-    final ordenRaw = _ordenController.text;
-    final ordenTrim = ordenRaw.trim();
-    final orden = ordenTrim.isEmpty ? null : int.tryParse(ordenTrim);
-    if (ordenRaw.isNotEmpty) {
-      if (ordenTrim.isEmpty) {
-        errors.add('Orden no puede ser solo espacios.');
-      } else if (empiezaConCero(ordenTrim)) {
-        errors.add('Orden tiene un valor invalido.');
-      } else if (orden == null) {
-        errors.add('Orden debe ser un número entero.');
-      } else if (orden <= 0) {
-        errors.add('Orden debe ser mayor que cero.');
+    if (_plantilla == null || _plantilla!.trackDistancia) {
+      distancia = distanciaTrim.isEmpty ? null : double.tryParse(distanciaTrim);
+      if (distanciaRaw.isNotEmpty) {
+        if (distanciaTrim.isEmpty) {
+          errors.add('Distancia no puede ser solo espacios.');
+        } else if (empiezaConCero(distanciaTrim)) {
+          errors.add('Distancia tiene un valor invalido.');
+        } else if (distancia == null) {
+          errors.add('Distancia debe ser un número.');
+        } else if (distancia <= 0) {
+          errors.add('Distancia debe ser mayor que cero.');
+        } else {
+          algunDatoValido = true;
+        }
       }
     }
 
@@ -229,18 +248,27 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       return;
     }
 
+    // Si hay plantilla, los campos no seleccionados deben guardarse como null
+    if (_plantilla != null) {
+      if (!_plantilla!.trackSeries) series = null;
+      if (!_plantilla!.trackReps) reps = null;
+      if (!_plantilla!.trackPeso) peso = null;
+      if (!_plantilla!.trackTiempo) tiempo = null;
+      if (!_plantilla!.trackDistancia) distancia = null;
+    }
+
     final actualizado = DatosEntrenamiento(
       id: widget.entrenamiento.id,
       titulo: _tituloController.text.trim(),
       descripcion: _descripcionController.text.trim(),
       fecha: widget.entrenamiento.fecha,
-      orden: orden,
       series: series,
       reps: reps,
       peso: peso,
       tiempo: tiempo,
       distancia: distancia,
       idUsuario: usuario.id,
+      idPlantilla: widget.entrenamiento.idPlantilla,
     );
 
     await DBHelper.update(actualizado);
@@ -321,12 +349,13 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     String label,
     TextEditingController controller, {
     TextInputType tipo = TextInputType.text,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextFormField(
         controller: controller,
-        enabled: _editMode,
+        enabled: enabled && _editMode,
         keyboardType: tipo,
         decoration: InputDecoration(
           labelText: label,
@@ -343,6 +372,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final fechaFormateada = DateFormat(
       'dd/MM/yyyy',
     ).format(widget.entrenamiento.fecha);
+
+    final plantilla = _plantilla;
 
     return Scaffold(
       appBar: AppBar(
@@ -374,43 +405,82 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 10),
-            _buildEditableField('Título', _tituloController),
+            _buildEditableField(
+              'Título',
+              _tituloController,
+              enabled: false, // No editable
+            ),
             _buildEditableField('Descripción', _descripcionController),
             const Divider(height: 30, thickness: 1),
             const Text(
               'Detalles del Ejercicio',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            _buildEditableField(
-              'Orden',
-              _ordenController,
-              tipo: TextInputType.number,
-            ),
-            _buildEditableField(
-              'Series',
-              _seriesController,
-              tipo: TextInputType.number,
-            ),
-            _buildEditableField(
-              'Repeticiones',
-              _repsController,
-              tipo: TextInputType.number,
-            ),
-            _buildEditableField(
-              'Peso (kg)',
-              _pesoController,
-              tipo: TextInputType.number,
-            ),
-            _buildEditableField(
-              'Tiempo (min)',
-              _tiempoController,
-              tipo: TextInputType.number,
-            ),
-            _buildEditableField(
-              'Distancia (km)',
-              _distanciaController,
-              tipo: TextInputType.number,
-            ),
+            // Eliminar campo de orden:
+            // _buildEditableField(
+            //   'Orden',
+            //   _ordenController,
+            //   tipo: TextInputType.number,
+            // ),
+            if (plantilla != null) ...[
+              if (plantilla.trackSeries)
+                _buildEditableField(
+                  'Series',
+                  _seriesController,
+                  tipo: TextInputType.number,
+                ),
+              if (plantilla.trackReps)
+                _buildEditableField(
+                  'Repeticiones',
+                  _repsController,
+                  tipo: TextInputType.number,
+                ),
+              if (plantilla.trackPeso)
+                _buildEditableField(
+                  'Peso (kg)',
+                  _pesoController,
+                  tipo: TextInputType.number,
+                ),
+              if (plantilla.trackTiempo)
+                _buildEditableField(
+                  'Tiempo (min)',
+                  _tiempoController,
+                  tipo: TextInputType.number,
+                ),
+              if (plantilla.trackDistancia)
+                _buildEditableField(
+                  'Distancia (km)',
+                  _distanciaController,
+                  tipo: TextInputType.number,
+                ),
+            ],
+            if (plantilla == null) ...[
+              _buildEditableField(
+                'Series',
+                _seriesController,
+                tipo: TextInputType.number,
+              ),
+              _buildEditableField(
+                'Repeticiones',
+                _repsController,
+                tipo: TextInputType.number,
+              ),
+              _buildEditableField(
+                'Peso (kg)',
+                _pesoController,
+                tipo: TextInputType.number,
+              ),
+              _buildEditableField(
+                'Tiempo (min)',
+                _tiempoController,
+                tipo: TextInputType.number,
+              ),
+              _buildEditableField(
+                'Distancia (km)',
+                _distanciaController,
+                tipo: TextInputType.number,
+              ),
+            ],
           ],
         ),
       ),

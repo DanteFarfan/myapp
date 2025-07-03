@@ -300,20 +300,82 @@ class _SeguimientoScreenState extends State<SeguimientoScreen> {
                                   ),
                                 ),
                               ),
-                              gridData: FlGridData(show: true),
-                              borderData: FlBorderData(show: true),
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: true,
+                                horizontalInterval:
+                                    valores.length > 1
+                                        ? ((valores.reduce(
+                                                  (a, b) => a > b ? a : b,
+                                                ) -
+                                                valores.reduce(
+                                                  (a, b) => a < b ? a : b,
+                                                )) /
+                                            5)
+                                        : 1,
+                                getDrawingHorizontalLine:
+                                    (value) => FlLine(
+                                      color: Colors.deepPurple.withOpacity(
+                                        0.08,
+                                      ),
+                                      strokeWidth: 1,
+                                    ),
+                                getDrawingVerticalLine:
+                                    (value) => FlLine(
+                                      color: Colors.deepPurple.withOpacity(
+                                        0.08,
+                                      ),
+                                      strokeWidth: 1,
+                                    ),
+                              ),
+                              borderData: FlBorderData(
+                                show: true,
+                                border: Border.all(
+                                  color: Colors.deepPurple.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
                               lineBarsData: [
                                 LineChartBarData(
                                   spots: spots,
                                   isCurved: true,
                                   color: Colors.deepPurple,
-                                  dotData: FlDotData(show: true),
+                                  barWidth: 3,
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter:
+                                        (spot, percent, bar, index) =>
+                                            FlDotCirclePainter(
+                                              radius: 4,
+                                              color: Colors.deepPurple,
+                                              strokeWidth: 2,
+                                              strokeColor: Colors.white,
+                                            ),
+                                  ),
                                   belowBarData: BarAreaData(
                                     show: true,
-                                    color: Colors.deepPurple.withOpacity(0.3),
+                                    color: Colors.deepPurple.withOpacity(0.15),
                                   ),
                                 ),
                               ],
+                              lineTouchData: LineTouchData(
+                                touchTooltipData: LineTouchTooltipData(
+                                  tooltipBgColor: Colors.deepPurple.shade100,
+                                  getTooltipItems: (touchedSpots) {
+                                    return touchedSpots.map((spot) {
+                                      int idx = spot.spotIndex;
+                                      return LineTooltipItem(
+                                        '${fechas[idx]}: ${valores[idx].toStringAsFixed(2)}',
+                                        const TextStyle(
+                                          color: Colors.deepPurple,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      );
+                                    }).toList();
+                                  },
+                                ),
+                                handleBuiltInTouches: true,
+                              ),
                             ),
                           ),
                         ),

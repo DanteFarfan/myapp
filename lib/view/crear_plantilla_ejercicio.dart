@@ -170,6 +170,37 @@ class _CrearPlantillaScreenState extends State<CrearPlantillaScreen> {
                                         onPressed: () => Navigator.pop(context),
                                         child: const Text('Cancelar'),
                                       ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          // Confirmar eliminación
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Eliminar plantilla'),
+                                              content: const Text('¿Seguro que deseas eliminar esta plantilla?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Cancelar'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await DBHelper.deletePlantilla(plantilla.id!);
+                                            await _cargarPlantillas();
+                                            Navigator.pop(context); // Cierra el dialog de edición
+                                            ScaffoldMessenger.of(this.context).showSnackBar(
+                                              const SnackBar(content: Text('Plantilla eliminada')),
+                                            );
+                                          }
+                                        },
+                                        child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                      ),
                                       ElevatedButton(
                                         onPressed: () async {
                                           if (editFormKey.currentState

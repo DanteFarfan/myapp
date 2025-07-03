@@ -153,24 +153,107 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEntrenamientoTile(DatosEntrenamiento e) {
+    List<Widget> detalles = [];
+    if (e.series != null) {
+      detalles.add(
+        Row(
+          children: [
+            const Icon(Icons.looks_3, size: 18, color: Colors.deepPurple),
+            const SizedBox(width: 4),
+            Text(
+              'Series: ${e.series}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      );
+    }
+    if (e.reps != null) {
+      detalles.add(
+        Row(
+          children: [
+            const Icon(Icons.repeat, size: 18, color: Colors.deepPurple),
+            const SizedBox(width: 4),
+            Text(
+              'Reps: ${e.reps}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      );
+    }
+    if (e.peso != null) {
+      detalles.add(
+        Row(
+          children: [
+            const Icon(Icons.line_weight, size: 18, color: Colors.deepPurple),
+            const SizedBox(width: 4),
+            Text(
+              'Peso: ${e.peso} kg',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      );
+    }
+    if (e.tiempo != null && e.tiempo!.isNotEmpty) {
+      detalles.add(
+        Row(
+          children: [
+            const Icon(Icons.timer, size: 18, color: Colors.deepPurple),
+            const SizedBox(width: 4),
+            Text(
+              'Tiempo: ${e.tiempo} min',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      );
+    }
+    if (e.distancia != null) {
+      detalles.add(
+        Row(
+          children: [
+            const Icon(
+              Icons.directions_run,
+              size: 18,
+              color: Colors.deepPurple,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Distancia: ${e.distancia} km',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: const Icon(Icons.check_circle, color: Colors.deepPurple),
-        title: Text(e.titulo),
+        title: Text(
+          e.titulo,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(e.descripcion),
-            const SizedBox(height: 4),
             Text(
-              'Orden: ${e.orden ?? '-'} | Series: ${e.series ?? '-'} | Reps: ${e.reps ?? '-'}',
+              e.descripcion,
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
             ),
-            Text(
-              'Peso: ${e.peso != null ? '${e.peso} kg' : '-'} | Tiempo: ${e.tiempo ?? '-'} | Distancia: ${e.distancia != null ? '${e.distancia} km' : '-'}',
-            ),
+            const SizedBox(height: 6),
+            if (detalles.isNotEmpty)
+              Wrap(spacing: 12, runSpacing: 4, children: detalles)
+            else
+              const Text(
+                'Sin detalles registrados',
+                style: TextStyle(color: Colors.grey),
+              ),
           ],
         ),
         isThreeLine: true,
