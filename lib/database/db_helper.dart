@@ -7,6 +7,7 @@ import '../model/plan_nutricion.dart';
 import '../model/seguimiento_medidas.dart';
 import '../model/notas.dart';
 import '../model/plantilla_ejercicio.dart';
+import '../model/categoria.dart';
 
 class DBHelper {
   static Database? _db;
@@ -123,6 +124,22 @@ class DBHelper {
           )
         ''');
         await _createPlantillaTable(db); // Asegura crear la tabla de plantillas
+
+        // Nuevas tablas para categorías y plantillas
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS Categoria (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER,
+            nombre TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS PlantillaCategoria (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_plantilla INTEGER,
+            id_categoria INTEGER
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         final columnasMap = await db.rawQuery(
@@ -686,5 +703,79 @@ class DBHelper {
   static Future<void> deletePlantilla(int id) async {
     final db = await getDB();
     await db.delete('PlantillaEjercicio', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // NUEVOS MÉTODOS PARA CATEGORÍAS
+
+  static Future<void> insertCategoria(Categoria categoria) async {
+    final db = await getDB();
+    await db.insert('Categoria', categoria.toMap());
+  }
+
+  static Future<List<Categoria>> getCategoriasPorUsuario(int idUsuario) async {
+    final db = await getDB();
+    final maps = await db.query(
+      'Categoria',
+      where: 'id_usuario = ?',
+      whereArgs: [idUsuario],
+      orderBy: 'nombre COLLATE NOCASE ASC',
+    );
+    return maps.map((e) => Categoria.fromMap(e)).toList();
+  }
+
+  static Future<void> asociarPlantillaACategoria(
+    int idPlantilla,
+    int idCategoria,
+  ) async {
+    final db = await getDB();
+    // Evita duplicados
+    final existe = await db.query(
+      'PlantillaCategoria',
+      where: 'id_plantilla = ? AND id_categoria = ?',
+      whereArgs: [idPlantilla, idCategoria],
+    );
+    if (existe.isEmpty) {
+      await db.insert('PlantillaCategoria', {
+        'id_plantilla': idPlantilla,
+        'id_categoria': idCategoria,
+      });
+    }
+  }
+
+  static Future<void> deleteCategoriaYCascada(int idCategoria) async {
+    final db = await getDB();
+    // Elimina asociaciones con plantillas
+    await db.delete(
+      'PlantillaCategoria',
+      where: 'id_categoria = ?',
+      whereArgs: [idCategoria],
+    );
+    // Elimina la categoría
+    await db.delete('Categoria', where: 'id = ?', whereArgs: [idCategoria]);
+  }
+
+  static Future<void> updateCategoria(Categoria categoria) async {
+    final db = await getDB();
+    await db.update(
+      'Categoria',
+      categoria.toMap(),
+      where: 'id = ?',
+      whereArgs: [categoria.id],
+    );
+  }
+
+  static Future<List<PlantillaEjercicio>> getPlantillasPorCategoria(
+    int idCategoria,
+  ) async {
+    final db = await getDB();
+    final result = await db.rawQuery(
+      '''
+      SELECT p.* FROM PlantillaEjercicio p
+      INNER JOIN PlantillaCategoria pc ON pc.id_plantilla = p.id
+      WHERE pc.id_categoria = ?
+    ''',
+      [idCategoria],
+    );
+    return result.map((e) => PlantillaEjercicio.fromMap(e)).toList();
   }
 }
