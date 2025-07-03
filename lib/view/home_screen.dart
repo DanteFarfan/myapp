@@ -9,6 +9,7 @@ import 'package:myapp/view/plan_nutricion.dart';
 // import 'package:myapp/view/usuario_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:myapp/view/seguimiento_screen.dart';
+import 'package:myapp/view/seguimiento_medidas.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -106,6 +107,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 title: const Text('Plantillas de ejercicio'),
                 onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.straighten, color: Colors.deepPurple),
+                title: const Text('Seguimiento medidas'),
+                onTap: () {
+                  Navigator.pop(context); // Cierra el modal
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SeguimientoMedidasScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
