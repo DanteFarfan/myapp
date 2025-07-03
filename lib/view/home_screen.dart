@@ -11,6 +11,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:myapp/view/seguimiento_screen.dart';
 import 'package:myapp/view/seguimiento_medidas.dart';
 import 'package:myapp/view/crear_plantilla_ejercicio.dart';
+import 'package:myapp/model/notas.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,12 +25,14 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _fechaSeleccionada = DateTime.now();
   Map<DateTime, List<DatosEntrenamiento>> _eventosPorFecha = {};
   bool mostrarCalendario = false;
+  List<NotaDia> notasDelDia = [];
 
   @override
   void initState() {
     super.initState();
     cargarEntrenamientosDelDia();
     cargarEventosCalendario();
+    cargarNotasDelDia();
   }
 
   Future<void> cargarEventosCalendario() async {
@@ -52,6 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     setState(() {
       entrenamientosDelDia = datos;
+    });
+  }
+
+  Future<void> cargarNotasDelDia() async {
+    final usuario = await DBHelper.getUsuarioActivo();
+    if (usuario == null) return;
+    final notas = await DBHelper.getNotasPorUsuarioYFecha(
+      usuario.id,
+      _fechaSeleccionada,
+    );
+    setState(() {
+      notasDelDia = notas;
     });
   }
 
@@ -175,10 +190,103 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Future<bool> _verificarSesionActiva() async {
-  //   final usuario = await DBHelper.getUsuarioActivo();
-  //   return usuario != null;
-  // }
+  Future<void> _agregarOEditarNota({NotaDia? notaEditar}) async {
+    final usuario = await DBHelper.getUsuarioActivo();
+    if (usuario == null) return;
+    final controller = TextEditingController(text: notaEditar?.texto ?? '');
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(notaEditar == null ? 'Agregar nota' : 'Editar nota'),
+            content: TextField(
+              controller: controller,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Escribe tu nota del día',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              if (notaEditar != null)
+                TextButton(
+                  onPressed: () async {
+                    final confirmDelete = await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (context) => AlertDialog(
+                            title: const Text('Eliminar nota'),
+                            content: const Text(
+                              '¿Seguro que deseas eliminar esta nota? Esta acción no se puede deshacer.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Eliminar'),
+                              ),
+                            ],
+                          ),
+                    );
+                    if (confirmDelete == true) {
+                      await DBHelper.deleteNota(notaEditar.id!);
+                      Navigator.pop(context, false);
+                      await cargarNotasDelDia();
+                    }
+                  },
+                  child: const Text(
+                    'Eliminar',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (controller.text.trim().isEmpty) return;
+                  if (notaEditar == null) {
+                    // Usa la fecha seleccionada, no DateTime.now()
+                    await DBHelper.insertNota(
+                      NotaDia(
+                        idUsuario: usuario.id,
+                        texto: controller.text.trim(),
+                        fecha: DateTime(
+                          _fechaSeleccionada.year,
+                          _fechaSeleccionada.month,
+                          _fechaSeleccionada.day,
+                        ),
+                      ),
+                    );
+                  } else {
+                    await DBHelper.updateNota(
+                      NotaDia(
+                        id: notaEditar.id,
+                        idUsuario: usuario.id,
+                        texto: controller.text.trim(),
+                        fecha: notaEditar.fecha, // Mantén la fecha original
+                      ),
+                    );
+                  }
+                  Navigator.pop(context, true);
+                  await cargarNotasDelDia();
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+    );
+    if (confirm == true) {
+      await cargarNotasDelDia();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _fechaSeleccionada = selectedDay;
                   });
                   await cargarEntrenamientosDelDia();
+                  await cargarNotasDelDia(); // <-- Agrega esta línea
                 },
                 eventLoader: (day) {
                   final key = DateTime(day.year, day.month, day.day);
@@ -293,6 +402,46 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+            const SizedBox(height: 20),
+            if (notasDelDia.isNotEmpty)
+              ...notasDelDia.map(
+                (nota) => Card(
+                  color: Colors.yellow[50],
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    leading: const Icon(Icons.note, color: Colors.deepPurple),
+                    title: Text(
+                      nota.texto,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    subtitle: Text(
+                      'Nota del día',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                      onPressed: () => _agregarOEditarNota(notaEditar: nota),
+                    ),
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.note_add, color: Colors.white),
+                label: const Text(
+                  'Agregar nota del día',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _agregarOEditarNota(),
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,

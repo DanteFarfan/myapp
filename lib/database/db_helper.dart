@@ -5,6 +5,7 @@ import '../model/usuario.dart';
 import '../model/seguimiento.dart';
 import '../model/plan_nutricion.dart';
 import '../model/seguimiento_medidas.dart';
+import '../model/notas.dart';
 
 class DBHelper {
   static Database? _db;
@@ -14,6 +15,7 @@ class DBHelper {
   static const String tablaPlanNutricion = 'PlanNutricion';
   static const String tablaHistorialPlanNutricion = 'HistorialPlanNutricion';
   static const String tablaMedidas = 'Medidas';
+  static const String tablaNotas = 'NotasDia';
 
   @Deprecated('Usar con precaución, solo para pruebas')
   static Future<void> borrarBaseDeDatos() async {
@@ -28,7 +30,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $tabla (
@@ -106,6 +108,15 @@ class DBHelper {
             descripcion TEXT,
             valor REAL,
             unidad TEXT,
+            fecha TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE $tablaNotas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER,
+            texto TEXT,
             fecha TEXT
           )
         ''');
@@ -199,6 +210,16 @@ class DBHelper {
               descripcion TEXT,
               valor REAL,
               unidad TEXT,
+              fecha TEXT
+            )
+          ''');
+        }
+        if (oldVersion < 10) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $tablaNotas (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              id_usuario INTEGER,
+              texto TEXT,
               fecha TEXT
             )
           ''');
@@ -562,5 +583,54 @@ class DBHelper {
       where: 'id_usuario = ? AND LOWER(nombre) = ?',
       whereArgs: [idUsuario, nombre.toLowerCase()],
     );
+  }
+
+  // MÉTODOS DE NOTAS
+
+  static Future<void> insertNota(NotaDia nota) async {
+    final db = await getDB();
+    await db.insert(tablaNotas, nota.toMap());
+  }
+
+  static Future<void> updateNota(NotaDia nota) async {
+    final db = await getDB();
+    await db.update(
+      tablaNotas,
+      nota.toMap(),
+      where: 'id = ?',
+      whereArgs: [nota.id],
+    );
+  }
+
+  static Future<void> deleteNota(int id) async {
+    final db = await getDB();
+    await db.delete(tablaNotas, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<List<NotaDia>> getNotasPorUsuarioYFecha(
+    int idUsuario,
+    DateTime fecha,
+  ) async {
+    final db = await getDB();
+    final inicio = DateTime(fecha.year, fecha.month, fecha.day);
+    final fin = inicio.add(const Duration(days: 1));
+    final maps = await db.query(
+      tablaNotas,
+      where: 'id_usuario = ? AND fecha >= ? AND fecha < ?',
+      whereArgs: [idUsuario, inicio.toIso8601String(), fin.toIso8601String()],
+      orderBy: 'fecha DESC',
+    );
+    return maps.map((e) => NotaDia.fromMap(e)).toList();
+  }
+
+  static Future<List<NotaDia>> getNotasPorUsuario(int idUsuario) async {
+    final db = await getDB();
+    final maps = await db.query(
+      tablaNotas,
+      where: 'id_usuario = ?',
+      whereArgs: [idUsuario],
+      orderBy: 'fecha DESC',
+    );
+    return maps.map((e) => NotaDia.fromMap(e)).toList();
   }
 }
