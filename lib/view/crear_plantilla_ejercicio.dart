@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Pantalla visual de creación de plantilla de ejercicio (sin funcionalidad)
 class CrearPlantillaScreen extends StatelessWidget {
   const CrearPlantillaScreen({super.key});
 
@@ -9,49 +10,96 @@ class CrearPlantillaScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF4F4F4),
       appBar: AppBar(
         title: const Text(
-          'Plantilla de Ejercicio',
+          'Crear Plantilla de Ejercicio',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.list_alt, size: 70, color: Colors.deepPurple),
-              const SizedBox(height: 30),
-              const Text(
-                'Aquí podrás crear y gestionar tus plantillas de ejercicios.\n\n(Próximamente disponible)',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.black87),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ListView(
+          children: [
+            const Text(
+              'Nombre de la plantilla',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Nombre',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.home, color: Colors.white),
-                  label: const Text(
-                    'Volver al inicio',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade500,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
+              enabled: false,
+            ),
+            const SizedBox(height: 30),
+            const Text(
+              '¿Qué vas a medir?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              title: const Text('Series'),
+              value: false,
+              onChanged: null,
+            ),
+            SwitchListTile(
+              title: const Text('Repeticiones'),
+              value: false,
+              onChanged: null,
+            ),
+            SwitchListTile(
+              title: const Text('Peso'),
+              value: false,
+              onChanged: null,
+            ),
+            SwitchListTile(
+              title: const Text('Distancia'),
+              value: false,
+              onChanged: null,
+            ),
+            SwitchListTile(
+              title: const Text('Tiempo'),
+              value: false,
+              onChanged: null,
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.save, color: Colors.white),
+                label: const Text(
+                  'Guardar Plantilla',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple.shade500,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: null,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Volver'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade400,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
         ),
       ),
     );
